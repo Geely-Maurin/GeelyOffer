@@ -2,6 +2,29 @@ import React, { useEffect, useState } from 'react'
 import { api, formatPrice } from '../utils/api'
 import { useAuth } from '../context/AuthContext'
 
+// Section order and headings for the grouped list. Admins type the category freely, so any
+// category not listed here goes into one shared "Overig" section at the end (its own
+// category shown under the name) rather than a heading per one-off spelling.
+const CATEGORY_SECTIONS = [
+  { key: 'exterior', label: 'Exterieur (lakkleuren)' },
+  { key: 'interior', label: 'Interieur (bekleding)' },
+  { key: 'techniek', label: 'Techniek & accessoires' },
+  { key: 'verplicht', label: 'Verplicht' },
+]
+const OTHER_SECTION = { key: '__other__', label: 'Overig' }
+const isKnownCategory = (category) => CATEGORY_SECTIONS.some((s) => s.key === category)
+
+// Whether an accessory is offered on some trim of the given model name — mirrors
+// accessoryAppliesToVehicle (utils/accessoryScope.js), but at model level: universal,
+// scoped to the whole model, or scoped to at least one of that model's trims.
+function appliesToModel(acc, modelName, vehicles) {
+  const models = acc.vehicleModels || []
+  const trims = acc.vehicleTrims || []
+  if (models.length === 0 && trims.length === 0) return true
+  if (models.includes(modelName)) return true
+  return trims.some((id) => vehicles.some((v) => v.id === id && v.name === modelName))
+}
+
 // Vehicles grouped by model name, each with its list of trims — drives the "Beschikbaar
 // voor" picker (whole model, or specific trims within it).
 function groupByModel(vehicles) {
@@ -203,6 +226,9 @@ function AdminAccessories() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(null)
+  const [modelFilter, setModelFilter] = useState('')
+  const [search, setSearch] = useState('')
+  const [showInactive, setShowInactive] = useState(false)
 
   const load = async () => {
     try {
@@ -230,6 +256,25 @@ function AdminAccessories() {
 
   useEffect(() => { load() }, [])
 
+  // Model names for the filter, from active vehicles only — a deactivated duplicate trim
+  // shouldn't add its own entry.
+  const modelNames = [...new Set(vehicles.filter((v) => v.active).map((v) => v.name))]
+  const inactiveCount = accessories.filter((acc) => !acc.active).length
+  const query = search.trim().toLowerCase()
+  const visible = accessories.filter((acc) =>
+    (showInactive || acc.active)
+    && (!modelFilter || appliesToModel(acc, modelFilter, vehicles))
+    && (!query || acc.name.toLowerCase().includes(query))
+  )
+  const sections = [...CATEGORY_SECTIONS, OTHER_SECTION]
+    .map((section) => ({
+      ...section,
+      items: visible
+        .filter((acc) => (section === OTHER_SECTION ? !isKnownCategory(acc.category) : acc.category === section.key))
+        .sort((a, b) => a.name.localeCompare(b.name, 'nl', { numeric: true })),
+    }))
+    .filter((section) => section.items.length > 0)
+
   const handleDelete = async (accessory) => {
     if (!window.confirm(`"${accessory.name}" permanent verwijderen?`)) return
     try {
@@ -249,60 +294,101 @@ function AdminAccessories() {
         )}
       </div>
 
+      <div className="filter-row" style={{ alignItems: 'center' }}>
+        <select value={modelFilter} onChange={(e) => setModelFilter(e.target.value)} style={{ maxWidth: '220px' }}>
+          <option value="">Alle modellen</option>
+          {modelNames.map((name) => (
+            <option key={name} value={name}>{name}</option>
+          ))}
+        </select>
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Zoek op naam…"
+          style={{ maxWidth: '240px' }}
+        />
+        {inactiveCount > 0 && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'none', fontSize: '0.85rem', margin: 0 }}>
+            <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+            Toon inactieve ({inactiveCount})
+          </label>
+        )}
+      </div>
+
       {error && <div className="error">{error}</div>}
 
       {loading ? (
         <div className="loading" style={{ minHeight: '120px' }}><div className="spinner" /></div>
+      ) : sections.length === 0 ? (
+        <p style={{ color: 'var(--muted)' }}>Geen opties gevonden.</p>
       ) : (
-        <div className="table-shell">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Naam</th>
-                <th>Categorie</th>
-                <th>Prijs</th>
-                <th>Beschikbaar voor</th>
-                <th>Status</th>
-                {canManage && <th>Acties</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {accessories.map((acc) => (
-                <tr key={acc.id}>
-                  <td style={{ fontWeight: 700 }}>
-                    {acc.colorHex && (
-                      <span
-                        style={{
-                          display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%',
-                          border: '1px solid var(--border-strong)', marginRight: '8px', verticalAlign: 'middle',
-                          backgroundColor: acc.colorHex,
-                        }}
-                        title={acc.colorHex}
-                      />
-                    )}
-                    {acc.name}
-                  </td>
-                  <td style={{ textTransform: 'capitalize' }}>{acc.category}</td>
-                  <td>{formatPrice(acc.price)}</td>
-                  <td style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{availabilitySummary(acc)}</td>
-                  <td>
-                    <span className={`badge ${acc.active ? 'sent' : 'draft'}`}>{acc.active ? 'Actief' : 'Inactief'}</span>
-                    {acc.mandatory && <span className="badge declined" style={{ marginLeft: '6px' }}>Verplicht</span>}
-                    {!acc.discountable && <span className="badge expiry-soon" style={{ marginLeft: '6px' }}>Geen korting</span>}
-                  </td>
-                  {canManage && (
-                    <td>
-                      <div className="row-actions">
-                        <button className="btn btn-outline" onClick={() => setEditing(acc)}>Bewerken</button>
-                        <button className="btn btn-danger" onClick={() => handleDelete(acc)}>Verwijderen</button>
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        sections.map((section) => (
+          <div key={section.key} style={{ marginBottom: '22px' }}>
+            <div className="section-kicker" style={{ marginBottom: '8px' }}>
+              {section.label} · {section.items.length}
+            </div>
+            <div className="table-shell">
+              <table className="data-table" style={{ tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '34%' }} />
+                  <col style={{ width: '13%' }} />
+                  <col />
+                  <col style={{ width: canManage ? '15%' : '20%' }} />
+                  {canManage && <col style={{ width: '220px' }} />}
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Naam</th>
+                    <th>Prijs</th>
+                    <th>Beschikbaar voor</th>
+                    <th>Status</th>
+                    {canManage && <th>Acties</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {section.items.map((acc) => (
+                    <tr key={acc.id} style={acc.active ? undefined : { opacity: 0.55 }}>
+                      <td style={{ fontWeight: 700 }}>
+                        {acc.colorHex && (
+                          <span
+                            style={{
+                              display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%',
+                              border: '1px solid var(--border-strong)', marginRight: '8px', verticalAlign: 'middle',
+                              backgroundColor: acc.colorHex,
+                            }}
+                            title={acc.colorHex}
+                          />
+                        )}
+                        {acc.name}
+                        {section === OTHER_SECTION && (
+                          <div style={{ fontSize: '0.75rem', fontWeight: 400, color: 'var(--muted)', marginTop: '2px' }}>
+                            Categorie: {acc.category || '—'}
+                          </div>
+                        )}
+                      </td>
+                      <td>{formatPrice(acc.price)}</td>
+                      <td style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{availabilitySummary(acc)}</td>
+                      <td>
+                        {!acc.active && <span className="badge draft" style={{ marginRight: '6px' }}>Inactief</span>}
+                        {acc.mandatory && <span className="badge declined" style={{ marginRight: '6px' }}>Verplicht</span>}
+                        {!acc.discountable && <span className="badge expiry-soon">Geen korting</span>}
+                      </td>
+                      {canManage && (
+                        <td>
+                          <div className="row-actions" style={{ flexWrap: 'nowrap' }}>
+                            <button className="btn btn-outline" onClick={() => setEditing(acc)}>Bewerken</button>
+                            <button className="btn btn-danger" onClick={() => handleDelete(acc)}>Verwijderen</button>
+                          </div>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
       )}
 
       {canManage && editing && (
