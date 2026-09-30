@@ -900,6 +900,43 @@ textarea {
   font-size: 0.78rem;
 }
 
+/* "Meer ▾" overflow menu for secondary row actions. position: fixed (placed from the
+   button's on-screen position in JS) so it isn't clipped by .table-shell's overflow. */
+.row-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 190px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 12px 32px rgba(15, 15, 15, 0.12);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+}
+
+.row-menu button {
+  background: none;
+  border: none;
+  text-align: left;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.row-menu button:hover:not(:disabled) {
+  background: var(--panel-soft);
+}
+
+.row-menu button:disabled {
+  color: var(--muted-soft);
+  cursor: default;
+}
+
 .pagination {
   display: flex;
   align-items: center;

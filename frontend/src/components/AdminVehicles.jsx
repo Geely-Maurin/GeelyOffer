@@ -139,7 +139,9 @@ function AdminVehicles() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [editing, setEditing] = useState(null) // vehicle object, or 'new', or null
-  const [showInactive, setShowInactive] = useState(true)
+  // Hidden by default, same as Beheer → Opties: deactivated trims (e.g. the retired
+  // hand-added Geely E2 duplicates) are clutter unless you go looking for them.
+  const [showInactive, setShowInactive] = useState(false)
 
   const load = async () => {
     try {
@@ -157,6 +159,12 @@ function AdminVehicles() {
   useEffect(() => { load() }, [])
 
   const visibleVehicles = showInactive ? vehicles : vehicles.filter((v) => v.active)
+  // One section per model, trims cheapest first (same order as "Kies je uitvoering").
+  const modelGroups = [...new Set(visibleVehicles.map((v) => v.name))].map((name) => ({
+    name,
+    trims: visibleVehicles.filter((v) => v.name === name).sort((a, b) => a.basePrice - b.basePrice),
+  }))
+  const inactiveCount = vehicles.filter((v) => !v.active).length
 
   return (
     <div className="card">
@@ -167,49 +175,64 @@ function AdminVehicles() {
 
       {error && <div className="error">{error}</div>}
 
-      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontSize: '0.85rem', color: 'var(--muted)' }}>
-        <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} style={{ width: '16px', height: '16px' }} />
-        Toon ook gedeactiveerde modellen
-      </label>
+      {inactiveCount > 0 && (
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', fontSize: '0.85rem', color: 'var(--muted)', textTransform: 'none' }}>
+          <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} style={{ width: '16px', height: '16px' }} />
+          Toon ook gedeactiveerde uitvoeringen ({inactiveCount})
+        </label>
+      )}
 
       {loading ? (
         <div className="loading" style={{ minHeight: '120px' }}><div className="spinner" /></div>
       ) : (
-        <div className="table-shell">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Model</th>
-                <th>Uitvoering</th>
-                <th>Basisprijs</th>
-                <th>Vermogen</th>
-                <th>Levertijd</th>
-                <th>Status</th>
-                <th>Acties</th>
-              </tr>
-            </thead>
-            <tbody>
-              {visibleVehicles.map((v) => (
-                <tr key={v.id}>
-                  <td style={{ fontWeight: 700 }}>{v.name}</td>
-                  <td>{v.model}</td>
-                  <td>{v.comingSoon ? '—' : formatPrice(v.basePrice)}</td>
-                  <td>{v.power ? `${v.power} pk` : '—'}</td>
-                  <td>{v.deliveryEstimate || '—'}</td>
-                  <td>
-                    <span className={`badge ${v.active ? 'sent' : 'draft'}`}>{v.active ? 'Actief' : 'Inactief'}</span>
-                    {v.comingSoon && <span className="badge declined" style={{ marginLeft: '6px' }}>Coming soon</span>}
-                  </td>
-                  <td>
-                    <button className="btn btn-outline" style={{ padding: '7px 12px', fontSize: '0.8rem' }} onClick={() => setEditing(v)}>
-                      Bewerken
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        modelGroups.map((group) => (
+          <div key={group.name} style={{ marginBottom: '22px' }}>
+            <div className="section-kicker" style={{ marginBottom: '8px' }}>
+              {group.name} · {group.trims.length}
+            </div>
+            <div className="table-shell">
+              <table className="data-table" style={{ tableLayout: 'fixed' }}>
+                <colgroup>
+                  <col style={{ width: '22%' }} />
+                  <col style={{ width: '18%' }} />
+                  <col style={{ width: '14%' }} />
+                  <col style={{ width: '18%' }} />
+                  <col />
+                  <col style={{ width: '120px' }} />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Uitvoering</th>
+                    <th>Basisprijs</th>
+                    <th>Vermogen</th>
+                    <th>Levertijd</th>
+                    <th>Status</th>
+                    <th>Acties</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.trims.map((v) => (
+                    <tr key={v.id} style={v.active ? undefined : { opacity: 0.55 }}>
+                      <td style={{ fontWeight: 700 }}>{v.model}</td>
+                      <td>{v.comingSoon ? '—' : formatPrice(v.basePrice)}</td>
+                      <td>{v.power ? `${v.power} pk` : '—'}</td>
+                      <td>{v.deliveryEstimate || '—'}</td>
+                      <td>
+                        {!v.active && <span className="badge draft" style={{ marginRight: '6px' }}>Inactief</span>}
+                        {!!v.comingSoon && <span className="badge declined">Coming soon</span>}
+                      </td>
+                      <td>
+                        <button className="btn btn-outline" style={{ padding: '7px 12px', fontSize: '0.8rem' }} onClick={() => setEditing(v)}>
+                          Bewerken
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))
       )}
 
       {editing && (

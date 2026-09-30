@@ -55,6 +55,52 @@ function QuoteList() {
   const [selectedIds, setSelectedIds] = useState([])
   const [editingQuoteId, setEditingQuoteId] = useState(null)
   const [error, setError] = useState('')
+  // The open "Meer ▾" menu: which quote, and where on screen to draw it (see .row-menu).
+  const [openMenu, setOpenMenu] = useState(null)
+  const menuRef = useRef(null)
+
+  // Close the menu on any click outside it, Escape, scroll or resize — it's positioned
+  // from the button's on-screen spot, so it would drift away from it on scroll.
+  useEffect(() => {
+    if (!openMenu) return undefined
+    const close = () => setOpenMenu(null)
+    // The toggle button handles its own click (open/close), so a mousedown on it mustn't
+    // also count as "outside" — that would close the menu and the click reopen it.
+    const onMouseDown = (e) => {
+      if (menuRef.current?.contains(e.target) || e.target.closest('[data-row-menu-toggle]')) return
+      close()
+    }
+    const onKeyDown = (e) => { if (e.key === 'Escape') close() }
+    document.addEventListener('mousedown', onMouseDown)
+    document.addEventListener('keydown', onKeyDown)
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown)
+      document.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('scroll', close, true)
+      window.removeEventListener('resize', close)
+    }
+  }, [openMenu])
+
+  const toggleMenu = (quoteId, event) => {
+    if (openMenu?.id === quoteId) { setOpenMenu(null); return }
+    const rect = event.currentTarget.getBoundingClientRect()
+    setOpenMenu({ id: quoteId, top: rect.bottom + 4, right: window.innerWidth - rect.right })
+  }
+
+  // Secondary actions that live in the "Meer ▾" menu rather than as their own buttons.
+  // Discount approval for a quote that's actually waiting on it stays a visible button
+  // (see the row), since that's the one thing a manager needs to spot at a glance.
+  const menuItems = (quote) => {
+    if (quote.isShowroom) return []
+    const items = [{ label: 'Dupliceren', onClick: () => handleDuplicate(quote.id) }]
+    if (quote.customerEmail) items.push({ label: 'Mail naar klant', onClick: () => handleSendEmail(quote.id) })
+    if (canManageDiscounts && quote.discountApprovalStatus === 'rejected') {
+      items.push({ label: 'Korting alsnog goedkeuren', onClick: () => handleApproveDiscount(quote.id) })
+    }
+    return items
+  }
 
   // Guards against a slower, stale response overwriting a newer one — e.g. rapidly
   // toggling the "Verloopt binnenkort"/"Vervolg nodig" filter pills fires overlapping
@@ -260,7 +306,6 @@ function QuoteList() {
                   <th>Status</th>
                   <th>Verkoper</th>
                   <th>Datum</th>
-                  <th>Vervalt</th>
                   <th>Acties</th>
                 </tr>
               </thead>
@@ -280,12 +325,7 @@ function QuoteList() {
                       {quote.isShowroom ? (
                         <span className="badge draft">Showroomaanbieding</span>
                       ) : (
-                        <>
-                          <div style={{ fontWeight: 700 }}>{quote.customerName}</div>
-                          {quote.customerEmail && (
-                            <div style={{ fontSize: '0.78rem', color: '#697687', marginTop: '4px' }}>{quote.customerEmail}</div>
-                          )}
-                        </>
+                        <div style={{ fontWeight: 700 }}>{quote.customerName}</div>
                       )}
                     </td>
                     <td>{quote.configuration?.vehicleName} {quote.configuration?.vehicleModel}</td>
@@ -311,14 +351,16 @@ function QuoteList() {
                       )}
                     </td>
                     <td style={{ fontSize: '0.85rem', color: '#697687' }}>{quote.createdByName || '—'}</td>
-                    <td>{formatDate(quote.createdAt)}</td>
-                    <td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      {formatDate(quote.createdAt)}
                       {(() => {
-                        if (quote.isShowroom) return <span className="badge expiry-soon">{showroomTimeLeft(quote)}</span>
+                        // Expiry shown under the creation date instead of in its own column.
+                        const line = (content) => <div style={{ marginTop: '4px' }}>{content}</div>
+                        if (quote.isShowroom) return line(<span className="badge expiry-soon">{showroomTimeLeft(quote)}</span>)
                         const info = expiryInfo(quote)
-                        if (!info) return <span style={{ color: 'var(--muted-soft)' }}>—</span>
-                        if (info.tone === 'normal') return <span style={{ color: 'var(--muted)', fontSize: '0.85rem' }}>{info.label}</span>
-                        return <span className={`badge ${info.tone === 'expired' ? 'declined' : 'expiry-soon'}`}>{info.label}</span>
+                        if (!info) return null
+                        if (info.tone === 'normal') return line(<span style={{ color: 'var(--muted)', fontSize: '0.78rem' }}>tot {info.label}</span>)
+                        return line(<span className={`badge ${info.tone === 'expired' ? 'declined' : 'expiry-soon'}`}>{info.label}</span>)
                       })()}
                     </td>
                     <td>
@@ -327,31 +369,30 @@ function QuoteList() {
                           PDF
                         </button>
                         {!quote.isShowroom && (
-                          <>
-                            <button className="btn btn-outline" onClick={() => setEditingQuoteId(quote.id)}>
-                              Bewerken
-                            </button>
-                            <button className="btn btn-outline" onClick={() => handleDuplicate(quote.id)} disabled={busyIds.includes(quote.id)}>
-                              Dupliceren
-                            </button>
-                          </>
-                        )}
-                        {!quote.isShowroom && quote.customerEmail && (
-                          <button className="btn btn-outline" onClick={() => handleSendEmail(quote.id)} disabled={busyIds.includes(quote.id)}>
-                            Mail
+                          <button className="btn btn-outline" onClick={() => setEditingQuoteId(quote.id)}>
+                            Bewerken
                           </button>
                         )}
-                        {canManageDiscounts && ['pending', 'rejected'].includes(quote.discountApprovalStatus) && (
+                        {canManageDiscounts && quote.discountApprovalStatus === 'pending' && (
                           <>
                             <button className="btn btn-success" onClick={() => handleApproveDiscount(quote.id)} disabled={busyIds.includes(quote.id)}>
                               Korting goedkeuren
                             </button>
-                            {quote.discountApprovalStatus !== 'rejected' && (
-                              <button className="btn btn-danger" onClick={() => handleRejectDiscount(quote.id)} disabled={busyIds.includes(quote.id)}>
-                                Weigeren
-                              </button>
-                            )}
+                            <button className="btn btn-danger" onClick={() => handleRejectDiscount(quote.id)} disabled={busyIds.includes(quote.id)}>
+                              Weigeren
+                            </button>
                           </>
+                        )}
+                        {menuItems(quote).length > 0 && (
+                          <button
+                            className="btn btn-outline"
+                            onClick={(e) => toggleMenu(quote.id, e)}
+                            data-row-menu-toggle
+                            aria-haspopup="menu"
+                            aria-expanded={openMenu?.id === quote.id}
+                          >
+                            Meer ▾
+                          </button>
                         )}
                       </div>
                     </td>
@@ -374,6 +415,25 @@ function QuoteList() {
           </div>
         )}
       </div>
+
+      {openMenu && (() => {
+        const quote = quotes.find((q) => q.id === openMenu.id)
+        if (!quote) return null
+        return (
+          <div ref={menuRef} className="row-menu" role="menu" style={{ top: openMenu.top, right: openMenu.right }}>
+            {menuItems(quote).map((item) => (
+              <button
+                key={item.label}
+                role="menuitem"
+                disabled={busyIds.includes(quote.id)}
+                onClick={() => { setOpenMenu(null); item.onClick() }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )
+      })()}
 
       {editingQuoteId && (
         <QuoteEditor

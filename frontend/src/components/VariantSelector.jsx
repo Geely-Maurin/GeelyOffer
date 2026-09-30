@@ -15,8 +15,11 @@ function rangeValue(variant) {
 }
 
 function VariantSelector({ vehicles, selectedModel, selectedVariant, onSelect }) {
-  // Filter vehicles for selected model
-  const variants = vehicles.filter(v => v.name === selectedModel)
+  // Trims of the selected model, cheapest first (PRO → PRO+ → MAX+, PRO → MAX → ULTRA) —
+  // the API returns them alphabetically, which put MAX/MAX+ before PRO.
+  const variants = vehicles
+    .filter(v => v.name === selectedModel)
+    .sort((a, b) => a.basePrice - b.basePrice)
 
   return (
     <div className="vehicles-grid">
