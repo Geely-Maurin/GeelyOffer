@@ -1,5 +1,12 @@
 // Standard equipment per model, sourced from the official Geely Belgium price lists (juli 2026).
-// PRO and PRO+ share the same standard equipment for both models; MAX+ adds items on top of PRO+.
+// E5 / Starray EM-i: PRO and PRO+ share the same standard equipment; MAX+ adds items on top
+// of PRO+. Geely E2: its trims don't nest like that (e.g. PRO/MAX have 4 speakers and steel
+// wheels, ULTRA replaces both), so each E2 item that isn't on every trim names its trims —
+// see onlyOn() and getStandardEquipment() below.
+
+// An equipment item available on only some trims. Plain strings are on every trim.
+const onlyOn = (trims, item) => ({ item, trims });
+
 export const STANDARD_EQUIPMENT = {
   'Geely E5': {
     base: [
@@ -243,9 +250,101 @@ export const STANDARD_EQUIPMENT = {
       },
     ],
   },
+
+  // From "Geely E2 Prijslijst 2026 | België", pages 11–12 ("Uitrusting"). The brochure
+  // splits Veiligheid over two columns; merged into one category here.
+  'Geely E2': {
+    base: [
+      {
+        category: 'Comfort',
+        items: [
+          'Elektrisch verstelbare bestuurdersstoel (6-weg) en passagiersstoel (4-weg)',
+          'Elektrisch inklapbare en verwarmde buitenspiegels met verwarmde achterruit',
+          'Elektrische ramen rondom met one-touch en anti-inklembeveiliging',
+          'Automatische airco (1-zone) met achterste ventilatieroosters en ventilatie op afstand',
+          'Keyless entry & start',
+          'Achteruitrijcamera met parkeersensoren achter',
+          onlyOn(['MAX', 'ULTRA'], 'Verwarmbare voorstoelen en stuurwiel'),
+          onlyOn(['ULTRA'], 'Elektrisch bedienbare achterklep'),
+          onlyOn(['ULTRA'], 'Frameloze ruitenwisser met regensensor'),
+        ],
+      },
+      {
+        category: 'Veiligheid',
+        items: [
+          'Adaptieve cruise control met file-assistent (ACC + ICC)',
+          'Automatische noodrem met uitwijkmanoeuvre-assistent (AEB + EMA)',
+          'Rijstrookassistent met noodcorrectie en automatische rijstrookwissel (LKA + ELKA + ALCA)',
+          'Waarschuwing botsing frontaal of van achter, plus melding wegrijdende voorligger (FCW + RCW + FVD)',
+          'Rijstrook- en dodehoekwaarschuwing met rijstrookwisselassistent (LDW + BSD + LCA)',
+          'Waarschuwing kruisend verkeer voor en achter, en portier-openwaarschuwing (FCTA + RCTA + DOW)',
+          'Verkeersbordherkenning met snelheidsoverschrijdingswaarschuwing (TSI)',
+          'Bestuurders- en inzittendemonitoring met detectie passagiers (DMS + OMS + CPD)',
+          onlyOn(['ULTRA'], 'Bandenspanningscontrolesysteem (TPMS)'),
+          '7 airbags (2× front, 2× zij voorin, 2× gordijn, 1× midden) met ISOFIX voor + achter',
+          'Automatische noodoproep en registratiesysteem voor gebeurtenissen (eCall + EDR)',
+          'ABS met elektronische remkrachtverdeling en stabiliteitscontrole (ABS + EBD + ESC)',
+          'Tractiecontrole met hellingstart- en afdaalassistent (G-TCS + HAC + HDC)',
+          onlyOn(['ULTRA'], 'Directe bandenspanningscontrole (dTPMS) met realtime uitlezing'),
+        ],
+      },
+      {
+        category: 'Technologie & multimedia',
+        items: [
+          'Regeneratief remsysteem met elektronische parkeerrem en auto hold (EPB)',
+          'Actieve sluiting lamellen in grille',
+          'Automatische LED-koplampen met grootlichtassistent en "follow me home"-functie (IHBC)',
+          'LED-dagrijverlichting en LED-achterlichten',
+          'FLYME AUTO infotainment met 14,6" HD-touchscreen en 8,8" LCD-instrumentenpaneel',
+          onlyOn(['PRO', 'MAX'], '4-speaker audiosysteem met FM-radio en DAB'),
+          onlyOn(['ULTRA'], '6-speaker audiosysteem'),
+          'Apple CarPlay, Android Auto en Bluetooth',
+          '4G-connectiviteit met online navigatie, multimedia en GEELY App Store',
+          'Over-the-air updates (OTA) en detectie/bediening op afstand',
+          'USB-poorten voor (1× Type-A + 1× Type-C) en achter (1× Type-A)',
+          'Registratiesysteem voor gebeurtenissen (EDR)',
+          onlyOn(['ULTRA'], '256-kleuren sfeerverlichting, instelbaar en met ademeffect'),
+          onlyOn(['ULTRA'], '15W Qi draadloze oplader voor telefoon'),
+          onlyOn(['ULTRA'], '540° panoramisch camerabeeld met transparant chassis'),
+        ],
+      },
+      {
+        category: 'Exterieur',
+        items: [
+          onlyOn(['PRO', 'MAX'], '16" stalen velgen met klaverdesign'),
+          onlyOn(['ULTRA'], '16" lichtmetalen velgen'),
+          '70L kofferruimte voor (frunk)',
+          'Frameloze ruitenwisser',
+          'Privacy glas achter',
+          onlyOn(['ULTRA'], 'Alu-look insert in sideskirt'),
+          onlyOn(['ULTRA'], 'Zonnekleppen voor met make-upspiegel en verlichting'),
+        ],
+      },
+      {
+        category: 'Interieur',
+        items: [
+          '375 liter kofferruimte achter, 1320 liter met omgeklapte bank',
+          'Bekleding en middenconsole in vegan leer',
+          'Multifunctioneel stuurwiel in microvezelleer',
+          'Middenarmsteun voor met 2 bekerhouders',
+          'Dashboardvak van 10L en leeslampje achter',
+          'Achterbank neerklapbaar in 4:6-verhouding',
+        ],
+      },
+      {
+        category: 'Elektrisch rijden',
+        items: [
+          onlyOn(['PRO'], '35 kWh batterij, WLTP-bereik 252 km, laden met 6,6 kW AC / 60 kW DC'),
+          onlyOn(['MAX', 'ULTRA'], '47 kWh batterij, WLTP-bereik 345 km, laden met 6,6 kW AC / 80 kW DC'),
+          'V2L – 3,3 kW stroomvoorziening voor elektrische apparaten',
+        ],
+      },
+    ],
+  },
 };
 
-// Returns [{ category, items }] for the given vehicle name + submodel (PRO / PRO+ / MAX+),
+// Returns [{ category, items }] for the given vehicle name + submodel (PRO / PRO+ / MAX+,
+// or PRO / MAX / ULTRA for the E2), dropping onlyOn() items that aren't on this trim and
 // merging the MAX+-only additions into their matching category when applicable.
 export function getStandardEquipment(vehicleName, model, lang = 'nl') {
   const data = STANDARD_EQUIPMENT[vehicleName];
@@ -253,10 +352,16 @@ export function getStandardEquipment(vehicleName, model, lang = 'nl') {
 
   const removals = model === 'MAX+' ? (data.maxPlusRemovals || []) : [];
   const categories = data.base
-    .map(group => ({ category: group.category, items: group.items.filter(item => !removals.includes(item)) }))
+    .map(group => ({
+      category: group.category,
+      items: group.items
+        .filter(entry => typeof entry === 'string' || entry.trims.includes(model))
+        .map(entry => (typeof entry === 'string' ? entry : entry.item))
+        .filter(item => !removals.includes(item)),
+    }))
     .filter(group => group.items.length > 0);
 
-  if (model === 'MAX+') {
+  if (model === 'MAX+' && data.maxPlusAdditional) {
     for (const extra of data.maxPlusAdditional) {
       const existing = categories.find(c => c.category === extra.category);
       if (existing) {
@@ -401,4 +506,58 @@ const ITEM_FR = {
   'Draadloos opladen mobiele telefoon': 'Chargeur sans fil pour téléphone',
   'Zonnekleppen met verlichte spiegeltjes voor': "Pare-soleil avec miroirs éclairés à l'avant",
   '19" lichtmetalen wielen met lage rolweerstand': "Jantes en alliage 19\" à faible résistance au roulement",
+  // Geely E2
+  'Elektrisch verstelbare bestuurdersstoel (6-weg) en passagiersstoel (4-weg)': 'Siège conducteur à réglage électrique (6 réglages) et siège passager (4 réglages)',
+  'Elektrisch inklapbare en verwarmde buitenspiegels met verwarmde achterruit': 'Rétroviseurs extérieurs rabattables électriquement et chauffants, lunette arrière chauffante',
+  'Elektrische ramen rondom met one-touch en anti-inklembeveiliging': 'Vitres électriques à impulsion avec anti-pincement',
+  'Automatische airco (1-zone) met achterste ventilatieroosters en ventilatie op afstand': "Climatisation automatique (1 zone) avec aérateurs arrière et ventilation à distance",
+  'Keyless entry & start': 'Accès et démarrage sans clé',
+  'Achteruitrijcamera met parkeersensoren achter': 'Caméra de recul avec capteurs de stationnement arrière',
+  'Verwarmbare voorstoelen en stuurwiel': 'Sièges avant et volant chauffants',
+  'Frameloze ruitenwisser met regensensor': 'Essuie-glace sans cadre avec capteur de pluie',
+  'Adaptieve cruise control met file-assistent (ACC + ICC)': 'Régulateur de vitesse adaptatif avec assistant embouteillages (ACC + ICC)',
+  'Automatische noodrem met uitwijkmanoeuvre-assistent (AEB + EMA)': "Freinage d'urgence automatique avec assistant de manœuvre d'évitement (AEB + EMA)",
+  'Rijstrookassistent met noodcorrectie en automatische rijstrookwissel (LKA + ELKA + ALCA)': "Assistant de maintien de voie avec correction d'urgence et changement de voie automatique (LKA + ELKA + ALCA)",
+  'Waarschuwing botsing frontaal of van achter, plus melding wegrijdende voorligger (FCW + RCW + FVD)': 'Alerte de collision avant et arrière, avec alerte de démarrage du véhicule précédent (FCW + RCW + FVD)',
+  'Rijstrook- en dodehoekwaarschuwing met rijstrookwisselassistent (LDW + BSD + LCA)': "Alerte de franchissement de ligne et d'angle mort avec assistant de changement de voie (LDW + BSD + LCA)",
+  'Waarschuwing kruisend verkeer voor en achter, en portier-openwaarschuwing (FCTA + RCTA + DOW)': "Alerte de trafic transversal avant et arrière, et alerte d'ouverture de portière (FCTA + RCTA + DOW)",
+  'Verkeersbordherkenning met snelheidsoverschrijdingswaarschuwing (TSI)': 'Reconnaissance des panneaux avec alerte de dépassement de vitesse (TSI)',
+  'Bestuurders- en inzittendemonitoring met detectie passagiers (DMS + OMS + CPD)': 'Surveillance du conducteur et des occupants avec détection de passagers (DMS + OMS + CPD)',
+  'Bandenspanningscontrolesysteem (TPMS)': 'Système de contrôle de la pression des pneus (TPMS)',
+  '7 airbags (2× front, 2× zij voorin, 2× gordijn, 1× midden) met ISOFIX voor + achter': '7 airbags (2× frontaux, 2× latéraux avant, 2× rideaux, 1× central) avec ISOFIX avant + arrière',
+  'Automatische noodoproep en registratiesysteem voor gebeurtenissen (eCall + EDR)': "Appel d'urgence automatique et enregistreur d'événements (eCall + EDR)",
+  'ABS met elektronische remkrachtverdeling en stabiliteitscontrole (ABS + EBD + ESC)': 'ABS avec répartition électronique de freinage et contrôle de stabilité (ABS + EBD + ESC)',
+  'Tractiecontrole met hellingstart- en afdaalassistent (G-TCS + HAC + HDC)': 'Contrôle de traction avec aide au démarrage en côte et aide à la descente (G-TCS + HAC + HDC)',
+  'Directe bandenspanningscontrole (dTPMS) met realtime uitlezing': 'Contrôle direct de la pression des pneus (dTPMS) avec affichage en temps réel',
+  'Regeneratief remsysteem met elektronische parkeerrem en auto hold (EPB)': 'Freinage régénératif avec frein de stationnement électronique et auto hold (EPB)',
+  'Actieve sluiting lamellen in grille': 'Volets de calandre actifs',
+  'Automatische LED-koplampen met grootlichtassistent en "follow me home"-functie (IHBC)': 'Phares LED automatiques avec assistant feux de route et fonction « follow me home » (IHBC)',
+  'LED-dagrijverlichting en LED-achterlichten': 'Feux de jour LED et feux arrière LED',
+  'FLYME AUTO infotainment met 14,6" HD-touchscreen en 8,8" LCD-instrumentenpaneel': 'Infodivertissement FLYME AUTO avec écran tactile HD 14,6" et combiné LCD 8,8"',
+  '4-speaker audiosysteem met FM-radio en DAB': 'Système audio 4 haut-parleurs avec radio FM et DAB',
+  '6-speaker audiosysteem': 'Système audio 6 haut-parleurs',
+  'Apple CarPlay, Android Auto en Bluetooth': 'Apple CarPlay, Android Auto et Bluetooth',
+  '4G-connectiviteit met online navigatie, multimedia en GEELY App Store': 'Connectivité 4G avec navigation en ligne, multimédia et GEELY App Store',
+  'Over-the-air updates (OTA) en detectie/bediening op afstand': 'Mises à jour over-the-air (OTA) et contrôle/commande à distance',
+  'USB-poorten voor (1× Type-A + 1× Type-C) en achter (1× Type-A)': 'Ports USB avant (1× Type-A + 1× Type-C) et arrière (1× Type-A)',
+  'Registratiesysteem voor gebeurtenissen (EDR)': "Enregistreur d'événements (EDR)",
+  '256-kleuren sfeerverlichting, instelbaar en met ademeffect': "Éclairage d'ambiance 256 couleurs, réglable avec effet respiration",
+  '15W Qi draadloze oplader voor telefoon': 'Chargeur sans fil Qi 15W pour téléphone',
+  '540° panoramisch camerabeeld met transparant chassis': 'Vue caméra panoramique 540° avec châssis transparent',
+  '16" stalen velgen met klaverdesign': 'Jantes en acier 16" design trèfle',
+  '16" lichtmetalen velgen': 'Jantes en alliage 16"',
+  '70L kofferruimte voor (frunk)': 'Coffre avant de 70 L (frunk)',
+  'Frameloze ruitenwisser': 'Essuie-glace sans cadre',
+  'Privacy glas achter': 'Vitres arrière surteintées',
+  'Alu-look insert in sideskirt': 'Insert aspect aluminium dans les bas de caisse',
+  'Zonnekleppen voor met make-upspiegel en verlichting': 'Pare-soleil avant avec miroir de courtoisie éclairé',
+  '375 liter kofferruimte achter, 1320 liter met omgeklapte bank': 'Coffre arrière de 375 litres, 1320 litres banquette rabattue',
+  'Bekleding en middenconsole in vegan leer': 'Sellerie et console centrale en cuir végan',
+  'Multifunctioneel stuurwiel in microvezelleer': 'Volant multifonction en cuir microfibre',
+  'Middenarmsteun voor met 2 bekerhouders': 'Accoudoir central avant avec 2 porte-gobelets',
+  'Dashboardvak van 10L en leeslampje achter': 'Boîte à gants de 10 L et liseuse arrière',
+  'Achterbank neerklapbaar in 4:6-verhouding': 'Banquette arrière rabattable 40/60',
+  '35 kWh batterij, WLTP-bereik 252 km, laden met 6,6 kW AC / 60 kW DC': 'Batterie 35 kWh, autonomie WLTP 252 km, recharge 6,6 kW AC / 60 kW DC',
+  '47 kWh batterij, WLTP-bereik 345 km, laden met 6,6 kW AC / 80 kW DC': 'Batterie 47 kWh, autonomie WLTP 345 km, recharge 6,6 kW AC / 80 kW DC',
+  'V2L – 3,3 kW stroomvoorziening voor elektrische apparaten': 'V2L – alimentation 3,3 kW pour appareils électriques',
 };

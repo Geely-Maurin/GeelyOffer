@@ -54,6 +54,7 @@ export function fuelKicker(fuel, lang) {
 const ACCESSORY_PREFIXES_FR = [
   ['Bekleding:', 'Sellerie :'],
   ['Metallic:', 'Métallisé :'],
+  ['Standaardlak:', 'Peinture unie :'],
 ];
 
 // Accessory names with no recognizable prefix pattern to swap — translated by exact match.

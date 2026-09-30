@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { STANDARD_ACCESSORIES } from '../data/accessoriesSeed.js';
+import { STANDARD_ACCESSORIES, GEELY_E2_ACCESSORIES } from '../data/accessoriesSeed.js';
 import { calculatePricing } from '../utils/pricing.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -50,31 +50,123 @@ function addColumnIfMissing(database, table, column, definition) {
   });
 }
 
-// Runs on every boot (unlike the seedVehicles block above, which only fires once on a
-// totally empty table) so this new model reaches databases that were already seeded
-// before it existed — an admin can later fill in the real price/specs via the
-// existing "edit vehicle" screen once they're announced.
-function seedGeelyE2IfMissing(database) {
-  database.get('SELECT id FROM vehicles WHERE id = ?', ['geely-e2'], (err, row) => {
+// Every model the mandatory Delivery Pack is charged on.
+const DELIVERY_PACK_MODELS = ['Geely E5', 'Starray EM-i', 'Geely E2'];
+
+// Accessories (besides the Delivery Pack) that the business wants on the E2 as well as the
+// E5 / Starray. The E2 cannot tow (0 kg trailer weight), so the towing hook is not here.
+const E2_SHARED_ACCESSORY_IDS = ['delivery-pack', 'laadkabel-3fasig-6m', 'laadkabel-3fasig-8m'];
+
+// Adds 'Geely E2' to the model scope of the shared accessories above on a database that
+// was seeded before the E2 existed. Called only at the moment the E2 trims are first
+// inserted (see seedGeelyE2IfMissing), so it runs once per database — an admin who later
+// removes the E2 from one of these in Beheer → Opties is not overridden on the next boot.
+// Leaves a row alone if it is universal (empty scope already covers every model) or
+// already lists the E2.
+function addGeelyE2ToSharedAccessories(database) {
+  const placeholders = E2_SHARED_ACCESSORY_IDS.map(() => '?').join(', ');
+  database.all(`SELECT id, vehicleModels, vehicleTrims FROM accessories WHERE id IN (${placeholders})`, E2_SHARED_ACCESSORY_IDS, (err, rows) => {
     if (err) {
-      console.error('Error checking for Geely E2 seed row:', err);
+      console.error('Error reading accessories to extend to the Geely E2:', err.message);
       return;
     }
-    if (row) return;
-
-    database.run(
-      `INSERT INTO vehicles (id, name, model, basePrice, fuel, transmission, power, torque, consumption, specifications, imageUrl, comingSoon)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`,
-      ['geely-e2', 'Geely E2', 'N.t.b.', 0, 'Nog niet bekend', 'Nog niet bekend', null, null, null, '{}', null],
-      (insertErr) => {
-        if (insertErr) {
-          console.error('Failed to seed Geely E2:', insertErr.message);
+    rows.forEach((row) => {
+      const models = JSON.parse(row.vehicleModels || '[]');
+      const trims = JSON.parse(row.vehicleTrims || '[]');
+      if ((models.length === 0 && trims.length === 0) || models.includes('Geely E2')) return;
+      database.run('UPDATE accessories SET vehicleModels = ? WHERE id = ?', [JSON.stringify([...models, 'Geely E2']), row.id], (updateErr) => {
+        if (updateErr) {
+          console.error(`Failed to extend ${row.id} to the Geely E2:`, updateErr.message);
           return;
         }
-        console.log('✓ Added Geely E2 (Coming Soon)');
-      }
-    );
+        console.log(`✓ ${row.id} now also applies to the Geely E2`);
+      });
+    });
   });
+}
+
+// Geely E2 trims, transcribed from the official "Geely E2 Prijslijst 2026 | België" (prices
+// valid 01.07.2026, page 3 "Versieprijzen"). power is in pk; the brochure's spec table
+// (page 13) garbles the PRO's figure as "60 / 85" in its text layer, but its own printed
+// table and the price-list table both say 60 kW / 81 pk.
+const GEELY_E2_TRIMS = [
+  {
+    id: 'geely-e2-pro',
+    model: 'PRO',
+    basePrice: 21490,
+    power: 81,
+    consumption: 15.9,
+    specifications: { category: 'Hatchback Electric', battery: '35 kWh LFP', range: '252 km WLTP', charger: '6.6 kW AC / 60 kW DC' },
+  },
+  {
+    id: 'geely-e2-max',
+    model: 'MAX',
+    basePrice: 23990,
+    power: 115,
+    consumption: 15.5,
+    specifications: { category: 'Hatchback Electric', battery: '47 kWh LFP', range: '345 km WLTP', charger: '6.6 kW AC / 80 kW DC' },
+  },
+  {
+    id: 'geely-e2-ultra',
+    model: 'ULTRA',
+    basePrice: 26990,
+    power: 115,
+    consumption: 15.5,
+    specifications: { category: 'Hatchback Electric', battery: '47 kWh LFP', range: '345 km WLTP', wheels: '16 inch lichtmetaal', charger: '6.6 kW AC / 80 kW DC' },
+  },
+];
+
+// Runs on every boot (unlike the seedVehicles block above, which only fires once on a
+// totally empty table) so the E2 reaches databases that were already seeded before it
+// existed. Each trim is inserted only if its id is missing, so prices an admin later edits
+// in Beheer → Voertuigen are never overwritten.
+//
+// Also retires the old single "coming soon" placeholder row (id 'geely-e2', model 'N.t.b.')
+// that stood in for the E2 before its price list was published: deleted when nothing
+// references it, otherwise just deactivated so old quotes/stock that point at it keep
+// resolving. Only touches it while it is still the untouched placeholder.
+function seedGeelyE2IfMissing(database) {
+  GEELY_E2_TRIMS.forEach((trim) => {
+    database.get('SELECT id FROM vehicles WHERE id = ?', [trim.id], (err, row) => {
+      if (err) {
+        console.error(`Error checking for ${trim.id} seed row:`, err.message);
+        return;
+      }
+      if (row) return;
+
+      database.run(
+        `INSERT INTO vehicles (id, name, model, basePrice, fuel, transmission, power, torque, consumption, specifications, imageUrl, comingSoon)
+         VALUES (?, 'Geely E2', ?, ?, 'Elektrisch', 'Automatisch', ?, 150, ?, ?, '🔋', 0)`,
+        [trim.id, trim.model, trim.basePrice, trim.power, trim.consumption, JSON.stringify(trim.specifications)],
+        (insertErr) => {
+          if (insertErr) {
+            console.error(`Failed to seed ${trim.id}:`, insertErr.message);
+            return;
+          }
+          console.log(`✓ Added Geely E2 ${trim.model}`);
+          if (trim.id === 'geely-e2-pro') addGeelyE2ToSharedAccessories(database);
+        }
+      );
+    });
+  });
+
+  database.get(
+    `SELECT
+       (SELECT COUNT(*) FROM quotes WHERE selectedVehicleId = 'geely-e2') +
+       (SELECT COUNT(*) FROM inventory WHERE vehicleId = 'geely-e2') AS refs`,
+    (err, row) => {
+      if (err) {
+        console.error('Error checking Geely E2 placeholder references:', err.message);
+        return;
+      }
+      const placeholder = "id = 'geely-e2' AND model = 'N.t.b.' AND comingSoon = 1";
+      if (row.refs === 0) {
+        database.run(`DELETE FROM vehicles WHERE ${placeholder}`);
+      } else {
+        database.run(`UPDATE vehicles SET active = 0 WHERE ${placeholder}`);
+      }
+    }
+  );
 }
 
 // Runs on every boot (same reasoning as seedGeelyE2IfMissing) so this mandatory fee
@@ -91,7 +183,7 @@ function seedGeelyE2IfMissing(database) {
 // can't race the other seeders.
 function seedDeliveryPackIfMissing(database) {
   const DELIVERY_PACK_PRICE_INCL_VAT = 949.00;
-  const MODELS_JSON = JSON.stringify(['Geely E5', 'Starray EM-i']);
+  const MODELS_JSON = JSON.stringify(DELIVERY_PACK_MODELS);
 
   database.get("SELECT id FROM accessories WHERE id = 'delivery-pack'", (err, canonical) => {
     if (err) {
@@ -180,7 +272,7 @@ function seedChargingCablesIfMissing(database) {
       database.run(
         `INSERT INTO accessories (id, name, price, category, vehicleModels, active, mandatory, discountable)
          VALUES (?, ?, ?, ?, ?, 1, 0, 0)`,
-        [id, name, priceInclVat, 'techniek', JSON.stringify(['Geely E5', 'Starray EM-i'])],
+        [id, name, priceInclVat, 'techniek', JSON.stringify(['Geely E5', 'Starray EM-i', 'Geely E2'])],
         (insertErr) => {
           if (insertErr) {
             console.error(`Failed to seed ${id}:`, insertErr.message);
@@ -223,6 +315,36 @@ function seedStandardPaintColorIfMissing(database) {
         console.log('✓ Added standard white paint colour (all models)');
       }
     );
+  });
+}
+
+// Runs on every boot (same reasoning as seedGeelyE2IfMissing) so the E2's paint and
+// upholstery options reach databases seeded before the E2 existed. Insert-only per id, so
+// an option an admin has since edited (price, name, scope) is never overwritten — though,
+// like every other *IfMissing seeder here, a row an admin deletes comes back on next boot
+// (deactivate it in Beheer → Opties instead).
+function seedGeelyE2AccessoriesIfMissing(database) {
+  GEELY_E2_ACCESSORIES.forEach((acc) => {
+    database.get('SELECT id FROM accessories WHERE id = ?', [acc.id], (err, row) => {
+      if (err) {
+        console.error(`Error checking for ${acc.id} seed row:`, err.message);
+        return;
+      }
+      if (row) return;
+
+      database.run(
+        `INSERT INTO accessories (id, name, price, category, vehicleModels, vehicleTrims, active, colorHex)
+         VALUES (?, ?, ?, ?, ?, ?, 1, ?)`,
+        [acc.id, acc.name, acc.price, acc.category, JSON.stringify(acc.vehicleModels), JSON.stringify(acc.vehicleTrims), acc.colorHex || null],
+        (insertErr) => {
+          if (insertErr) {
+            console.error(`Failed to seed ${acc.id}:`, insertErr.message);
+            return;
+          }
+          console.log(`✓ Added ${acc.name} (Geely E2)`);
+        }
+      );
+    });
   });
 }
 
@@ -309,7 +431,10 @@ function backfillQuoteItemDiscountableIfMissing(database) {
 // narrow: only touches the row when BOTH scope lists are empty, so an admin who
 // deliberately scopes it to specific trims (vehicleTrims) is left alone.
 function restoreDeliveryPackScopingIfWidened(database) {
-  database.run(`UPDATE accessories SET vehicleModels = '["Geely E5","Starray EM-i"]' WHERE id = 'delivery-pack' AND vehicleModels = '[]' AND vehicleTrims = '[]'`);
+  database.run(
+    `UPDATE accessories SET vehicleModels = ? WHERE id = 'delivery-pack' AND vehicleModels = '[]' AND vehicleTrims = '[]'`,
+    [JSON.stringify(DELIVERY_PACK_MODELS)]
+  );
 }
 
 // Last-line-of-defence self-heal for the recurring "Delivery Pack appears twice on the
@@ -905,6 +1030,7 @@ export function initializeDatabase() {
     seedGeelyE2IfMissing(database);
     seedBranchesIfEmpty(database);
     seedAccessoriesIfEmpty(database);
+    seedGeelyE2AccessoriesIfMissing(database);
     fixAccessoryColorDataIfStale(database);
     seedDeliveryPackIfMissing(database);
     seedTowingHookIfMissing(database);

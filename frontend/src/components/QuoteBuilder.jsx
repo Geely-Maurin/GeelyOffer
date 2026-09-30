@@ -734,7 +734,7 @@ function QuoteBuilder({ onQuoteCreated }) {
                 {previewFrontImage && (
                   <div className="vehicle-color-preview">
                     <div className="vehicle-color-preview-image">
-                      <img src={previewFrontImage} alt={`${selectedVariant.name}${selectedColorAccessory ? ` — ${selectedColorAccessory.name.replace('Metallic: ', '')}` : ''}`} />
+                      <img src={previewFrontImage} alt={`${selectedVariant.name}${selectedColorAccessory ? ` — ${selectedColorAccessory.name.replace(/^[^:]+:\s*/, '')}` : ''}`} />
                     </div>
                     {previewRearImage && (
                       <div className="vehicle-color-preview-image vehicle-color-preview-secondary">

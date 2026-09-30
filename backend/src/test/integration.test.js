@@ -115,17 +115,56 @@ describe('server integration', () => {
 
     const vehiclesRes = await fetch(`${BASE_URL}/api/vehicles`, { headers: { Cookie: cookie } });
     const vehicles = await vehiclesRes.json();
-    // 6 real trims (3x E5, 3x Starray EM-i) + the "coming soon" Geely E2 placeholder
-    // (seedGeelyE2IfMissing in database/init.js).
-    assert.equal(vehicles.length, 7);
+    // 3x E5, 3x Starray EM-i, 3x Geely E2 (seedGeelyE2IfMissing in database/init.js). The
+    // old "coming soon" E2 placeholder row must be gone.
+    assert.equal(vehicles.length, 9);
+    assert.deepEqual(
+      vehicles.filter((v) => v.name === 'Geely E2').map((v) => [v.model, v.basePrice]).sort(),
+      [['MAX', 23990], ['PRO', 21490], ['ULTRA', 26990]]
+    );
+    assert.ok(!vehicles.some((v) => v.id === 'geely-e2'), 'the E2 placeholder should have been retired');
 
     const accessoriesRes = await fetch(`${BASE_URL}/api/accessories`, { headers: { Cookie: cookie } });
     const accessories = await accessoriesRes.json();
-    // 12 from STANDARD_ACCESSORIES (paint colors + upholstery for both models) + 1
-    // mandatory delivery pack (one row, both models) + 1 towing hook + 2 charging cables +
-    // 1 free standard white paint color (all models) — all seeded independently of
-    // STANDARD_ACCESSORIES, see database/init.js.
-    assert.equal(accessories.length, 17);
+    // 12 from STANDARD_ACCESSORIES (paint colors + upholstery for E5/Starray) + 6 from
+    // GEELY_E2_ACCESSORIES (5 paints + 1 upholstery) + 1 mandatory delivery pack (one row)
+    // + 1 towing hook + 2 charging cables + 1 free standard white paint color (all models)
+    // — the non-STANDARD_ACCESSORIES rows are seeded on every boot, see database/init.js.
+    assert.equal(accessories.length, 23);
+  });
+
+  test('a Geely E2 quote gets the mandatory Delivery Pack, and the charging cables apply to the E2', async () => {
+    const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+    });
+    const cookie = extractCookie(loginRes);
+
+    const accessories = await (await fetch(`${BASE_URL}/api/accessories`, { headers: { Cookie: cookie } })).json();
+    for (const id of ['delivery-pack', 'laadkabel-3fasig-6m', 'laadkabel-3fasig-8m']) {
+      const row = accessories.find((a) => a.id === id);
+      assert.ok(row && row.vehicleModels.includes('Geely E2'), `${id} should apply to the Geely E2`);
+    }
+    assert.ok(!accessories.find((a) => a.id === 'towing-hook').vehicleModels.includes('Geely E2'), 'the E2 cannot tow — no towing hook');
+
+    const quoteRes = await fetch(`${BASE_URL}/api/quotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        customerName: 'E2 Delivery Pack Test',
+        selectedVehicleId: 'geely-e2-pro',
+        configuration: { vehicleName: 'Geely E2', vehicleModel: 'PRO' },
+        accessories: [],
+        discountPercentage: 0,
+      }),
+    });
+    assert.equal(quoteRes.status, 201);
+    const quote = await quoteRes.json();
+    assert.equal(quote.totalPrice, 21490 + 949, 'E2 PRO adviesprijs plus the Delivery Pack, exactly once');
+
+    const deleteRes = await fetch(`${BASE_URL}/api/quotes/${quote.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
+    assert.equal(deleteRes.status, 204);
   });
 
   test('creating a quote produces correct VAT-inclusive/exclusive totals end-to-end', async () => {

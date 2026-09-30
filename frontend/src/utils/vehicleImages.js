@@ -20,7 +20,7 @@ import e5Interior from '../assets/vehicles/interior/e5-interior.jpg'
 import starrayInterior from '../assets/vehicles/interior/starray-interior.jpg'
 
 // Default (uncolored) photo per model — shown before a paint color is picked, and for a
-// model with no per-color photos at all (Geely E2 is still "coming soon", no configurator).
+// color with no photo of its own (the Geely E2 has no per-color photos yet).
 export const VEHICLE_IMAGES = {
   'Geely E5': e5Default,
   'Starray EM-i': starrayDefault,

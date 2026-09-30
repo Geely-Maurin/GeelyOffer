@@ -35,3 +35,27 @@ export const STANDARD_ACCESSORIES = [
   // places races seedAccessoriesIfEmpty against it on a brand-new database — both would
   // try to insert the same id and the second one crashes on a UNIQUE constraint violation.
 ];
+
+// Geely E2 options, from the official "Geely E2 Prijslijst 2026 | België" (pages 4 and 6).
+// Kept out of STANDARD_ACCESSORIES above because that list only seeds a totally empty
+// table — the E2 arrived after most databases were already seeded, so these are inserted
+// per id on every boot by seedGeelyE2AccessoriesIfMissing() in database/init.js instead.
+//
+// Paint: Moon White is the E2's free standard colour, already covered by the shared €0
+// "Standaardkleur: Wit" row, so it has no row of its own. Nebula Beige and Aurora Green
+// are "Standaardlak" (solid, non-metallic) but still carry a surcharge per the price list
+// (€350 and €650 incl. BTW); the other three are metallic at €650. All six colours are
+// available on every trim. colorHex is a representative swatch taken from the brochure
+// photos (see the note at the top of this file).
+//
+// Upholstery: Horizon Grey TEP-leder is standard on every trim (no row, same as the E5 /
+// Starray standard upholstery); Skyline White TEP-leder (€500) is ULTRA-only, so it is
+// scoped by trim id rather than by model.
+export const GEELY_E2_ACCESSORIES = [
+  { id: 'e2-paint-nebula-beige', name: 'Standaardlak: Nebula Beige', price: 350, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#D6CFBE' },
+  { id: 'e2-paint-aurora-green', name: 'Standaardlak: Aurora Green', price: 650, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#B4C9A2' },
+  { id: 'e2-paint-nova-pink', name: 'Metallic: Nova Pink', price: 650, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#D7B7BD' },
+  { id: 'e2-paint-comet-grey', name: 'Metallic: Comet Grey', price: 650, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#6F706E' },
+  { id: 'e2-paint-star-silver', name: 'Metallic: Star Silver', price: 650, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#B9C0C8' },
+  { id: 'e2-upholstery-skyline-white', name: 'Bekleding: Skyline White TEP-leder', price: 500, category: 'interior', vehicleModels: [], vehicleTrims: ['geely-e2-ultra'] },
+];

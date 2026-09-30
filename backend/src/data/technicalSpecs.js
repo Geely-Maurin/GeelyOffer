@@ -95,11 +95,59 @@ export const TECHNICAL_SPECS = {
       { label: 'Kofferbak (rechtop / plat)', value: '528 / 2.065 liter' },
     ],
   },
+
+  // From "Geely E2 Prijslijst 2026 | België" (pages 13–14 "Technische specificaties", plus
+  // the dimension drawing on page 14 for the overhangs). Trims are PRO / MAX / ULTRA; MAX
+  // and ULTRA share every technical figure. Braked/unbraked trailer weight and nose weight
+  // are listed as 0 kg — shown as "Niet mogelijk", same as the E5 PRO.
+  'Geely E2': {
+    drivetrain: (model) => [
+      { label: 'Motorvermogen', value: { PRO: '60 kW · 81 pk', MAX: '85 kW · 115 pk', ULTRA: '85 kW · 115 pk' }[model] },
+      { label: 'Koppel', value: '150 Nm' },
+      { label: 'Aandrijving', value: 'Achterwielaandrijving' },
+      { label: 'Batterijtype', value: 'LFP' },
+      { label: 'Capaciteit', value: { PRO: '35,35 kWh', MAX: '47,14 kWh', ULTRA: '47,14 kWh' }[model] },
+      { label: 'Rijmodi', value: 'ECO · COMFORT · SPORT · SNOW' },
+    ],
+    chassis: () => [
+      { label: 'Carrosserie', value: 'Hatchback · 5 zitplaatsen' },
+      { label: 'Vering voor', value: 'McPherson' },
+      { label: 'Vering achter', value: 'Multilink' },
+      { label: 'Remmen', value: 'Voor geventileerd / achter massief' },
+      { label: 'Draaicirkel', value: '9,9 m' },
+      { label: 'Banden', value: '205/60 R16' },
+    ],
+    performance: (model) => [
+      { label: 'Topsnelheid', value: '140 km/u' },
+      { label: '0–100 km/u', value: { PRO: '14,2 s', MAX: '11,5 s', ULTRA: '11,5 s' }[model] },
+      { label: 'Verbruik', value: { PRO: '15,9 kWh/100 km', MAX: '15,5 kWh/100 km', ULTRA: '15,5 kWh/100 km' }[model] },
+      { label: 'CO₂-uitstoot', value: '0 g/km (WLTP)' },
+    ],
+    weight: (model) => [
+      { label: 'Leeggewicht', value: { PRO: '1.290 kg', MAX: '1.365 kg', ULTRA: '1.365 kg' }[model] },
+      { label: 'Rijklaar gewicht', value: { PRO: '1.390 kg', MAX: '1.465 kg', ULTRA: '1.465 kg' }[model] },
+      { label: 'Aanhanger (ge-/ongeremd)', value: 'Niet mogelijk' },
+      { label: 'Max. kogeldruk', value: 'Niet mogelijk' },
+    ],
+    charging: (model) => [
+      { label: 'WLTP-actieradius', value: { PRO: '252 km', MAX: '345 km', ULTRA: '345 km' }[model] },
+      { label: 'AC-laden 10–100%', value: { PRO: '5 u 20 min', MAX: '7 u 10 min', ULTRA: '7 u 10 min' }[model] },
+      { label: 'Max. AC-vermogen', value: '6,6 kW' },
+      { label: 'DC-snelladen 30–80%', value: { PRO: '19 min · max. 60 kW', MAX: '19 min · max. 80 kW', ULTRA: '19 min · max. 80 kW' }[model] },
+    ],
+    dimensions: () => [
+      { label: 'Lengte × breedte × hoogte', value: '4.135 × 1.805 × 1.580 mm' },
+      { label: 'Wielbasis', value: '2.645 mm' },
+      { label: 'Overhang voor / achter', value: '740 / 750 mm' },
+      { label: 'Kofferbak (min / max)', value: '375 / 1.320 liter' },
+      { label: 'Frunk (voorin)', value: '70 liter' },
+    ],
+  },
 };
 
 // Returns { drivetrain, chassis, performance, weight, charging, dimensions }, each an array
-// of {label, value}, or null if this vehicle/model isn't in the price list data above (e.g.
-// the Geely E2, which has no published specs yet). lang='fr' translates each row's label
+// of {label, value}, or null if this vehicle/model isn't in the price list data above.
+// lang='fr' translates each row's label
 // and value for a French quote — see translateSpecLabel/translateSpecValue below.
 export function getTechnicalSpecs(vehicleName, model, lang = 'nl') {
   const data = TECHNICAL_SPECS[vehicleName];
@@ -170,6 +218,7 @@ const SPEC_LABEL_FR = {
   'AC-laden 25–100%': 'Charge AC 25–100 %',
   'Kofferbak (rechtop / plat)': 'Coffre (relevé / rabattu)',
   'Brandstofverbruik': 'Consommation de carburant',
+  'Frunk (voorin)': 'Coffre avant (frunk)',
 };
 
 function translateSpecLabel(label) {
@@ -186,6 +235,8 @@ const SPEC_VALUE_EXACT_FR = {
   'Voorwielaandrijving': 'Traction avant',
   'Voor geventileerd / achter massief': "Ventilés à l'avant / pleins à l'arrière",
   'SUV · 5 zitplaatsen': 'SUV · 5 places',
+  'Achterwielaandrijving': 'Propulsion',
+  'Hatchback · 5 zitplaatsen': 'Hatchback · 5 places',
 };
 
 function translateSpecValue(value) {
