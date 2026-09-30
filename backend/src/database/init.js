@@ -85,6 +85,30 @@ function addGeelyE2ToSharedAccessories(database) {
   });
 }
 
+// The live site already had E2 trims entered by hand in Beheer → Voertuigen (random ids)
+// before the seeded ones below arrived, so every E2 trim showed twice in "Kies je
+// uitvoering". Deactivates any other active 'Geely E2' row with the same trim name as a
+// seeded trim, keeping the seeded row — only that one carries the ULTRA-only Skyline White
+// scoping (vehicleTrims) and the ids the rest of the code refers to. Deactivated, not
+// deleted: quotes and stock that point at a hand-added row keep resolving. Runs on every
+// boot, but only while the seeded trim itself is active — an admin who deliberately
+// switches the seeded row off to keep their own is left alone.
+function retireHandAddedGeelyE2Duplicates(database, trim) {
+  database.run(
+    `UPDATE vehicles SET active = 0
+     WHERE name = 'Geely E2' AND id <> ? AND LOWER(TRIM(model)) = LOWER(?) AND active = 1
+       AND EXISTS (SELECT 1 FROM vehicles WHERE id = ? AND active = 1)`,
+    [trim.id, trim.model, trim.id],
+    function onRetired(err) {
+      if (err) {
+        console.error(`Failed to retire duplicate Geely E2 ${trim.model} rows:`, err.message);
+        return;
+      }
+      if (this.changes > 0) console.log(`✓ Deactivated ${this.changes} duplicate Geely E2 ${trim.model} row(s)`);
+    }
+  );
+}
+
 // Geely E2 trims, transcribed from the official "Geely E2 Prijslijst 2026 | België" (prices
 // valid 01.07.2026, page 3 "Versieprijzen"). power is in pk; the brochure's spec table
 // (page 13) garbles the PRO's figure as "60 / 85" in its text layer, but its own printed
@@ -132,7 +156,10 @@ function seedGeelyE2IfMissing(database) {
         console.error(`Error checking for ${trim.id} seed row:`, err.message);
         return;
       }
-      if (row) return;
+      if (row) {
+        retireHandAddedGeelyE2Duplicates(database, trim);
+        return;
+      }
 
       database.run(
         `INSERT INTO vehicles (id, name, model, basePrice, fuel, transmission, power, torque, consumption, specifications, imageUrl, comingSoon)
@@ -145,6 +172,7 @@ function seedGeelyE2IfMissing(database) {
           }
           console.log(`✓ Added Geely E2 ${trim.model}`);
           if (trim.id === 'geely-e2-pro') addGeelyE2ToSharedAccessories(database);
+          retireHandAddedGeelyE2Duplicates(database, trim);
         }
       );
     });
