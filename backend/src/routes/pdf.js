@@ -36,12 +36,18 @@ const VEHICLE_COLOR_IMAGES = {
   'Metallic: Polar Black': path.join(__dirname, '../assets/vehicles/colors/starray-polar-black-front.jpg'),
 };
 
-// One interior photo per model — each model currently has only a single upholstery option
-// in the catalog, so (unlike the exterior colors above) there's no per-choice variant to
-// key this by; it just shows the upholstery that's actually sold.
+// Interior photo of each model's standard upholstery (E5: Dark Blue TEP-leder, Starray
+// EM-i: Sapphire Blue) — used when the quote has no optional upholstery on it.
 const VEHICLE_INTERIOR_IMAGES = {
-  'Geely E5': path.join(__dirname, '../assets/vehicles/interior/e5-interior.jpg'),
-  'Starray EM-i': path.join(__dirname, '../assets/vehicles/interior/starray-interior.jpg'),
+  'Geely E5': path.join(__dirname, '../assets/vehicles/interior/e5-interior-dark-blue.jpg'),
+  'Starray EM-i': path.join(__dirname, '../assets/vehicles/interior/starray-interior-sapphire-blue.jpg'),
+};
+
+// Interior photos for the optional (MAX+-only) upholsteries, keyed by the exact accessory
+// name stored on the quote_items row — same idea as VEHICLE_COLOR_IMAGES above.
+const VEHICLE_UPHOLSTERY_IMAGES = {
+  'Bekleding: Ivory White TEP-leder': path.join(__dirname, '../assets/vehicles/interior/e5-interior-ivory-white.jpg'),
+  'Bekleding: Amber Brown TEP-leder': path.join(__dirname, '../assets/vehicles/interior/starray-interior-amber-brown.jpg'),
 };
 
 // The legal entity actually issuing the quote (a Geely dealer) — distinct from "Geely",
@@ -738,7 +744,9 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
   }
 
   // ===================== Interieur (own page, one full-width photo) =====================
-  const interiorImagePath = VEHICLE_INTERIOR_IMAGES[vehicle.name];
+  const selectedUpholsteryItem = items.find((item) => VEHICLE_UPHOLSTERY_IMAGES[item.itemName]);
+  const interiorImagePath = (selectedUpholsteryItem && VEHICLE_UPHOLSTERY_IMAGES[selectedUpholsteryItem.itemName])
+    || VEHICLE_INTERIOR_IMAGES[vehicle.name];
   if (interiorImagePath) {
     doc.addPage();
     drawContinuationHeader(doc, T.interiorTitle, vehicleLabel, smallLogoWidth);

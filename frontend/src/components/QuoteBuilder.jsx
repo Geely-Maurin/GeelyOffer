@@ -13,7 +13,7 @@ import AccessoriesSelector from './AccessoriesSelector'
 import PricingSummary from './PricingSummary'
 import CustomerForm from './CustomerForm'
 import TradeInForm from './TradeInForm'
-import { VEHICLE_IMAGES, VEHICLE_COLOR_FRONT_IMAGES, VEHICLE_REAR_IMAGES, VEHICLE_INTERIOR_IMAGES } from '../utils/vehicleImages'
+import { VEHICLE_IMAGES, VEHICLE_COLOR_FRONT_IMAGES, VEHICLE_REAR_IMAGES, VEHICLE_INTERIOR_IMAGES, VEHICLE_UPHOLSTERY_IMAGES } from '../utils/vehicleImages'
 
 function needsApprovalWarning(discountType, discountValue, role) {
   if (['admin', 'sales_manager'].includes(role)) return false
@@ -394,12 +394,15 @@ function QuoteBuilder({ onQuoteCreated }) {
   const previewFrontImage = (selectedColorAccessory && VEHICLE_COLOR_FRONT_IMAGES[selectedColorAccessory.name])
     || (selectedVariant && VEHICLE_IMAGES[selectedVariant.name])
   const previewRearImage = selectedVariant && VEHICLE_REAR_IMAGES[selectedVariant.name]
-  const previewInteriorImage = selectedVariant && VEHICLE_INTERIOR_IMAGES[selectedVariant.name]
+  // Interior photo follows the selected upholstery the same way, falling back to the
+  // model's standard (dark) upholstery when none is picked.
+  const selectedInteriorAccessory = selectedAccessories.find((acc) => acc.category === 'interior')
+  const previewInteriorImage = (selectedInteriorAccessory && VEHICLE_UPHOLSTERY_IMAGES[selectedInteriorAccessory.name])
+    || (selectedVariant && VEHICLE_INTERIOR_IMAGES[selectedVariant.name])
 
   // Describes exactly what the stock-match notice below actually matched on, so it never
   // claims "same interior" for a match that only checked variant + color (see the
   // matchingStock effect above — interior is only enforced when the customer picked one).
-  const selectedInteriorAccessory = selectedAccessories.find((acc) => acc.category === 'interior')
   const stockMatchDescription = selectedInteriorAccessory ? 'uitvoering, kleur en interieur' : 'uitvoering en kleur'
 
   const stepLabels = isShowroom

@@ -16,8 +16,10 @@ import starrayVolcanicGreyFront from '../assets/vehicles/colors/starray-volcanic
 import starrayPolarBlackFront from '../assets/vehicles/colors/starray-polar-black-front.jpg'
 import starrayRear from '../assets/vehicles/colors/starray-rear.jpg'
 
-import e5Interior from '../assets/vehicles/interior/e5-interior.jpg'
-import starrayInterior from '../assets/vehicles/interior/starray-interior.jpg'
+import e5InteriorDarkBlue from '../assets/vehicles/interior/e5-interior-dark-blue.jpg'
+import e5InteriorIvoryWhite from '../assets/vehicles/interior/e5-interior-ivory-white.jpg'
+import starrayInteriorSapphireBlue from '../assets/vehicles/interior/starray-interior-sapphire-blue.jpg'
+import starrayInteriorAmberBrown from '../assets/vehicles/interior/starray-interior-amber-brown.jpg'
 
 // Default (uncolored) photo per model — shown before a paint color is picked, and for a
 // color with no photo of its own (the Geely E2 has no per-color photos yet).
@@ -52,10 +54,17 @@ export const VEHICLE_REAR_IMAGES = {
   'Starray EM-i': starrayRear,
 }
 
-// One interior photo per model. Each model currently has only a single upholstery option
-// in the catalog (see accessoriesSeed.js), so — unlike the exterior colors above — there's
-// no per-choice variant to key this by; it just shows the upholstery that's actually sold.
+// Interior photo of each model's standard upholstery (E5: Dark Blue TEP-leder, Starray
+// EM-i: Sapphire Blue — standard on every trim per the July 2026 price lists, which is
+// where these photos come from). Shown whenever no optional upholstery is selected.
 export const VEHICLE_INTERIOR_IMAGES = {
-  'Geely E5': e5Interior,
-  'Starray EM-i': starrayInterior,
+  'Geely E5': e5InteriorDarkBlue,
+  'Starray EM-i': starrayInteriorSapphireBlue,
+}
+
+// Interior photos for the optional (MAX+-only) upholsteries, keyed by the exact accessory
+// name used in accessoriesSeed.js — same idea as VEHICLE_COLOR_FRONT_IMAGES above.
+export const VEHICLE_UPHOLSTERY_IMAGES = {
+  'Bekleding: Ivory White TEP-leder': e5InteriorIvoryWhite,
+  'Bekleding: Amber Brown TEP-leder': starrayInteriorAmberBrown,
 }
