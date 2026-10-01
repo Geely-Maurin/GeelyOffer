@@ -20,9 +20,10 @@ const VEHICLE_IMAGES = {
   'Geely E2': path.join(__dirname, '../assets/vehicles/geely-e2.jpg'),
 };
 
-// Real front 3/4 photos per exterior color (same source and mapping as
-// frontend/src/utils/vehicleImages.js), keyed by the exact accessory name stored on the
-// quote_items row. A color without an entry here just falls back to VEHICLE_IMAGES above.
+// Real photos per exterior color (same sources and mapping as
+// frontend/src/utils/vehicleImages.js — front 3/4 for the E5 / Starray, side view for the
+// E2), keyed by the exact accessory name stored on the quote_items row. A color without an
+// entry here just falls back to VEHICLE_IMAGES above.
 const VEHICLE_COLOR_IMAGES = {
   'Metallic: Frost Grey': path.join(__dirname, '../assets/vehicles/colors/e5-frost-grey-front.jpg'),
   'Metallic: Carbon Black': path.join(__dirname, '../assets/vehicles/colors/e5-carbon-black-front.jpg'),
@@ -34,6 +35,18 @@ const VEHICLE_COLOR_IMAGES = {
   'Metallic: Glacier Blue': path.join(__dirname, '../assets/vehicles/colors/starray-glacier-blue-front.jpg'),
   'Metallic: Volcanic Grey': path.join(__dirname, '../assets/vehicles/colors/starray-volcanic-grey-front.jpg'),
   'Metallic: Polar Black': path.join(__dirname, '../assets/vehicles/colors/starray-polar-black-front.jpg'),
+  'Standaardlak: Nebula Beige': path.join(__dirname, '../assets/vehicles/colors/e2-nebula-beige-side.jpg'),
+  'Standaardlak: Aurora Green': path.join(__dirname, '../assets/vehicles/colors/e2-aurora-green-side.jpg'),
+  'Metallic: Nova Pink': path.join(__dirname, '../assets/vehicles/colors/e2-nova-pink-side.jpg'),
+  'Metallic: Comet Grey': path.join(__dirname, '../assets/vehicles/colors/e2-comet-grey-side.jpg'),
+  'Metallic: Star Silver': path.join(__dirname, '../assets/vehicles/colors/e2-star-silver-side.jpg'),
+};
+
+// Photo for the free "Standaardkleur: Wit" colour, per model — it's one shared row for
+// every model, so it can't be keyed by name above. Only the E2 has one (Moon White).
+const STANDARD_PAINT_NAME = 'Standaardkleur: Wit';
+const VEHICLE_STANDARD_COLOR_IMAGES = {
+  'Geely E2': path.join(__dirname, '../assets/vehicles/colors/e2-moon-white-side.jpg'),
 };
 
 // Interior photo of each model's standard upholstery (E5: Dark Blue TEP-leder, Starray
@@ -410,7 +423,10 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
   // (a quote_items row whose name is a known paint color), falling back to the model's
   // default photo for a color Geely hasn't been photographed in yet, or none picked.
   const selectedColorItem = items.find((item) => VEHICLE_COLOR_IMAGES[item.itemName]);
-  const heroImagePath = (selectedColorItem && VEHICLE_COLOR_IMAGES[selectedColorItem.itemName]) || VEHICLE_IMAGES[vehicle.name];
+  const hasStandardPaint = items.some((item) => item.itemName === STANDARD_PAINT_NAME);
+  const heroImagePath = (selectedColorItem && VEHICLE_COLOR_IMAGES[selectedColorItem.itemName])
+    || (hasStandardPaint && VEHICLE_STANDARD_COLOR_IMAGES[vehicle.name])
+    || VEHICLE_IMAGES[vehicle.name];
   let cursorY = 105;
   if (heroImagePath) {
     const img = doc.openImage(heroImagePath);

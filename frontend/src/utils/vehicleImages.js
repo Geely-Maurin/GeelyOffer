@@ -16,6 +16,13 @@ import starrayVolcanicGreyFront from '../assets/vehicles/colors/starray-volcanic
 import starrayPolarBlackFront from '../assets/vehicles/colors/starray-polar-black-front.jpg'
 import starrayRear from '../assets/vehicles/colors/starray-rear.jpg'
 
+import e2MoonWhiteSide from '../assets/vehicles/colors/e2-moon-white-side.jpg'
+import e2NebulaBeigeSide from '../assets/vehicles/colors/e2-nebula-beige-side.jpg'
+import e2AuroraGreenSide from '../assets/vehicles/colors/e2-aurora-green-side.jpg'
+import e2NovaPinkSide from '../assets/vehicles/colors/e2-nova-pink-side.jpg'
+import e2CometGreySide from '../assets/vehicles/colors/e2-comet-grey-side.jpg'
+import e2StarSilverSide from '../assets/vehicles/colors/e2-star-silver-side.jpg'
+
 import e5InteriorDarkBlue from '../assets/vehicles/interior/e5-interior-dark-blue.jpg'
 import e5InteriorIvoryWhite from '../assets/vehicles/interior/e5-interior-ivory-white.jpg'
 import starrayInteriorSapphireBlue from '../assets/vehicles/interior/starray-interior-sapphire-blue.jpg'
@@ -24,17 +31,20 @@ import e2InteriorHorizonGrey from '../assets/vehicles/interior/e2-interior-horiz
 import e2InteriorSkylineWhite from '../assets/vehicles/interior/e2-interior-skyline-white.jpg'
 
 // Default (uncolored) photo per model — shown before a paint color is picked, and for a
-// color with no photo of its own (the Geely E2 has no per-color photos yet).
+// color with no photo of its own.
 export const VEHICLE_IMAGES = {
   'Geely E5': e5Default,
   'Starray EM-i': starrayDefault,
   'Geely E2': geelyE2,
 }
 
-// Real front 3/4 photos per exterior color, sourced from Geely's own Belgian site
-// (geelyauto.be) and keyed by the exact accessory name used in accessoriesSeed.js. Geely
-// only publishes a front photo per color there (see VEHICLE_REAR_IMAGES below) — a color
-// with no entry here just falls back to the model's default photo above.
+// Real photos per exterior color, keyed by the exact accessory name used in
+// accessoriesSeed.js. E5 / Starray: front 3/4 photos from Geely's Belgian site
+// (geelyauto.be), which only publishes a front photo per color (see VEHICLE_REAR_IMAGES
+// below). E2: side views from Geely's official EX2 360° studio set (geely.com.au, "inspire"
+// spec — black roof, as sold in Belgium); the side angle is the one geelyauto.be uses
+// itself, and the front/rear angles carry an Australian "GEELY EX2" plate. A color with no
+// entry here just falls back to the model's default photo above.
 export const VEHICLE_COLOR_FRONT_IMAGES = {
   'Metallic: Frost Grey': e5FrostGreyFront,
   'Metallic: Carbon Black': e5CarbonBlackFront,
@@ -46,6 +56,19 @@ export const VEHICLE_COLOR_FRONT_IMAGES = {
   'Metallic: Glacier Blue': starrayGlacierBlueFront,
   'Metallic: Volcanic Grey': starrayVolcanicGreyFront,
   'Metallic: Polar Black': starrayPolarBlackFront,
+  'Standaardlak: Nebula Beige': e2NebulaBeigeSide,
+  'Standaardlak: Aurora Green': e2AuroraGreenSide,
+  'Metallic: Nova Pink': e2NovaPinkSide,
+  'Metallic: Comet Grey': e2CometGreySide,
+  'Metallic: Star Silver': e2StarSilverSide,
+}
+
+// Photo for the free "Standaardkleur: Wit" colour, per model. That colour is one shared row
+// for every model, so it can't be keyed by name in VEHICLE_COLOR_FRONT_IMAGES above. Only
+// the E2 has one (Moon White); the E5 / Starray keep showing their default photo.
+export const STANDARD_PAINT_NAME = 'Standaardkleur: Wit'
+export const VEHICLE_STANDARD_COLOR_IMAGES = {
+  'Geely E2': e2MoonWhiteSide,
 }
 
 // One rear 3/4 photo per model — Geely doesn't publish a rear photo per color (only the

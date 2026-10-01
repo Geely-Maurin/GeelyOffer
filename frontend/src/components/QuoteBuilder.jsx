@@ -13,7 +13,7 @@ import AccessoriesSelector from './AccessoriesSelector'
 import PricingSummary from './PricingSummary'
 import CustomerForm from './CustomerForm'
 import TradeInForm from './TradeInForm'
-import { VEHICLE_IMAGES, VEHICLE_COLOR_FRONT_IMAGES, VEHICLE_REAR_IMAGES, VEHICLE_INTERIOR_IMAGES, VEHICLE_UPHOLSTERY_IMAGES } from '../utils/vehicleImages'
+import { VEHICLE_IMAGES, VEHICLE_COLOR_FRONT_IMAGES, VEHICLE_STANDARD_COLOR_IMAGES, STANDARD_PAINT_NAME, VEHICLE_REAR_IMAGES, VEHICLE_INTERIOR_IMAGES, VEHICLE_UPHOLSTERY_IMAGES } from '../utils/vehicleImages'
 
 function needsApprovalWarning(discountType, discountValue, role) {
   if (['admin', 'sales_manager'].includes(role)) return false
@@ -392,6 +392,7 @@ function QuoteBuilder({ onQuoteCreated }) {
   // utils/vehicleImages.js for why.
   const selectedColorAccessory = selectedAccessories.find((acc) => acc.category === 'exterior')
   const previewFrontImage = (selectedColorAccessory && VEHICLE_COLOR_FRONT_IMAGES[selectedColorAccessory.name])
+    || (selectedColorAccessory?.name === STANDARD_PAINT_NAME && selectedVariant && VEHICLE_STANDARD_COLOR_IMAGES[selectedVariant.name])
     || (selectedVariant && VEHICLE_IMAGES[selectedVariant.name])
   const previewRearImage = selectedVariant && VEHICLE_REAR_IMAGES[selectedVariant.name]
   // Interior photo follows the selected upholstery the same way, falling back to the
