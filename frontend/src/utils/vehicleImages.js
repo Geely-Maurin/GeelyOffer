@@ -20,6 +20,8 @@ import e5InteriorDarkBlue from '../assets/vehicles/interior/e5-interior-dark-blu
 import e5InteriorIvoryWhite from '../assets/vehicles/interior/e5-interior-ivory-white.jpg'
 import starrayInteriorSapphireBlue from '../assets/vehicles/interior/starray-interior-sapphire-blue.jpg'
 import starrayInteriorAmberBrown from '../assets/vehicles/interior/starray-interior-amber-brown.jpg'
+import e2InteriorHorizonGrey from '../assets/vehicles/interior/e2-interior-horizon-grey.jpg'
+import e2InteriorSkylineWhite from '../assets/vehicles/interior/e2-interior-skyline-white.jpg'
 
 // Default (uncolored) photo per model — shown before a paint color is picked, and for a
 // color with no photo of its own (the Geely E2 has no per-color photos yet).
@@ -55,16 +57,19 @@ export const VEHICLE_REAR_IMAGES = {
 }
 
 // Interior photo of each model's standard upholstery (E5: Dark Blue TEP-leder, Starray
-// EM-i: Sapphire Blue — standard on every trim per the July 2026 price lists, which is
-// where these photos come from). Shown whenever no optional upholstery is selected.
+// EM-i: Sapphire Blue, E2: Horizon Grey — standard on every trim per the July 2026 price
+// lists). Shown whenever no optional upholstery is selected.
 export const VEHICLE_INTERIOR_IMAGES = {
   'Geely E5': e5InteriorDarkBlue,
   'Starray EM-i': starrayInteriorSapphireBlue,
+  'Geely E2': e2InteriorHorizonGrey,
 }
 
-// Interior photos for the optional (MAX+-only) upholsteries, keyed by the exact accessory
-// name used in accessoriesSeed.js — same idea as VEHICLE_COLOR_FRONT_IMAGES above.
+// Interior photos for the optional upholsteries (MAX+-only on the E5/Starray, ULTRA-only
+// on the E2), keyed by the exact accessory name used in accessoriesSeed.js — same idea as
+// VEHICLE_COLOR_FRONT_IMAGES above.
 export const VEHICLE_UPHOLSTERY_IMAGES = {
   'Bekleding: Ivory White TEP-leder': e5InteriorIvoryWhite,
   'Bekleding: Amber Brown TEP-leder': starrayInteriorAmberBrown,
+  'Bekleding: Skyline White TEP-leder': e2InteriorSkylineWhite,
 }

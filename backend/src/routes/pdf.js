@@ -37,17 +37,20 @@ const VEHICLE_COLOR_IMAGES = {
 };
 
 // Interior photo of each model's standard upholstery (E5: Dark Blue TEP-leder, Starray
-// EM-i: Sapphire Blue) — used when the quote has no optional upholstery on it.
+// EM-i: Sapphire Blue, E2: Horizon Grey) — used when the quote has no optional upholstery.
 const VEHICLE_INTERIOR_IMAGES = {
   'Geely E5': path.join(__dirname, '../assets/vehicles/interior/e5-interior-dark-blue.jpg'),
   'Starray EM-i': path.join(__dirname, '../assets/vehicles/interior/starray-interior-sapphire-blue.jpg'),
+  'Geely E2': path.join(__dirname, '../assets/vehicles/interior/e2-interior-horizon-grey.jpg'),
 };
 
-// Interior photos for the optional (MAX+-only) upholsteries, keyed by the exact accessory
-// name stored on the quote_items row — same idea as VEHICLE_COLOR_IMAGES above.
+// Interior photos for the optional upholsteries (MAX+-only on the E5/Starray, ULTRA-only
+// on the E2), keyed by the exact accessory name stored on the quote_items row — same idea
+// as VEHICLE_COLOR_IMAGES above.
 const VEHICLE_UPHOLSTERY_IMAGES = {
   'Bekleding: Ivory White TEP-leder': path.join(__dirname, '../assets/vehicles/interior/e5-interior-ivory-white.jpg'),
   'Bekleding: Amber Brown TEP-leder': path.join(__dirname, '../assets/vehicles/interior/starray-interior-amber-brown.jpg'),
+  'Bekleding: Skyline White TEP-leder': path.join(__dirname, '../assets/vehicles/interior/e2-interior-skyline-white.jpg'),
 };
 
 // The legal entity actually issuing the quote (a Geely dealer) — distinct from "Geely",
