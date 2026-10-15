@@ -45,7 +45,7 @@ geely-quotation-system/
 
 ## Prerequisites
 
-- Node.js 18+ and npm
+- Node.js 20.17+ and npm (required by `sqlite3` and `nodemailer`)
 
 ## Local development
 
