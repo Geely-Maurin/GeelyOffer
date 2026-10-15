@@ -376,6 +376,14 @@ function seedGeelyE2AccessoriesIfMissing(database) {
   });
 }
 
+// Phone and e-mail are as printed on each branch's paper bestelbon letterhead ("T ROE 051
+// 97 19 17", "M verkoop.roeselare@geely-maurin.be"), branch code included.
+const DEFAULT_BRANCHES = [
+  { id: 'roeselare', name: 'Geely Roeselare', address: 'Ovenstraat 15, 8800 Roeselare', phone: 'ROE 051 97 19 17', email: 'verkoop.roeselare@geely-maurin.be' },
+  { id: 'brugge', name: 'Geely Brugge', address: 'Pathoekeweg 7, 8000 Brugge', phone: 'BRU 050 17 04 17', email: 'verkoop.brugge@geely-maurin.be' },
+  { id: 'oostende', name: 'Geely Oostende', address: 'Torhoutsesteenweg 710, 8400 Oostende', phone: 'OST 059 47 17 10', email: 'verkoop.oostende@geely-maurin.be' },
+];
+
 function seedBranchesIfEmpty(database) {
   database.get('SELECT COUNT(*) AS count FROM branches', (err, row) => {
     if (err) {
@@ -384,15 +392,21 @@ function seedBranchesIfEmpty(database) {
     }
     if (row.count > 0) return;
 
-    const branches = [
-      { id: 'roeselare', name: 'Geely Roeselare', address: 'Ovenstraat 15, 8800 Roeselare' },
-      { id: 'brugge', name: 'Geely Brugge', address: 'Pathoekeweg 7, 8000 Brugge' },
-      { id: 'oostende', name: 'Geely Oostende', address: 'Torhoutsesteenweg 710, 8400 Oostende' },
-    ];
-    const insertBranch = database.prepare('INSERT INTO branches (id, name, address, active) VALUES (?, ?, ?, 1)');
-    branches.forEach((b) => insertBranch.run(b.id, b.name, b.address));
+    const insertBranch = database.prepare('INSERT INTO branches (id, name, address, phone, email, active) VALUES (?, ?, ?, ?, ?, 1)');
+    DEFAULT_BRANCHES.forEach((b) => insertBranch.run(b.id, b.name, b.address, b.phone, b.email));
     insertBranch.finalize();
     console.log('✓ Seeded default branches');
+  });
+}
+
+// Branches seeded before the phone/email columns existed (matched by seeded id, or by
+// name for one an admin entered by hand) get the letterhead details filled in once. Only
+// NULL is filled — an admin who clears a field in Beheer → Vestigingen stores '' instead,
+// which is left alone.
+function backfillBranchContactIfMissing(database) {
+  DEFAULT_BRANCHES.forEach((b) => {
+    database.run('UPDATE branches SET phone = ? WHERE phone IS NULL AND (id = ? OR name = ?)', [b.phone, b.id, b.name]);
+    database.run('UPDATE branches SET email = ? WHERE email IS NULL AND (id = ? OR name = ?)', [b.email, b.id, b.name]);
   });
 }
 
@@ -639,6 +653,9 @@ export function initializeDatabase() {
         createdAt DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+    // Printed in the branch letterhead on the bestelbon (routes/orderForm.js). Optional.
+    addColumnIfMissing(database, 'branches', 'phone', 'TEXT');
+    addColumnIfMissing(database, 'branches', 'email', 'TEXT');
 
     // Vehicles table
     database.run(`
@@ -1057,6 +1074,7 @@ export function initializeDatabase() {
 
     seedGeelyE2IfMissing(database);
     seedBranchesIfEmpty(database);
+    backfillBranchContactIfMissing(database);
     seedAccessoriesIfEmpty(database);
     seedGeelyE2AccessoriesIfMissing(database);
     fixAccessoryColorDataIfStale(database);

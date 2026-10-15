@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { formatPrice, formatDate, formatQuoteNumber, api } from '../utils/api'
-import { STATUS_LABELS, QUOTE_STATUSES, DISCOUNT_APPROVAL_STATUS_LABELS, DISCOUNT_APPROVAL_BADGE_CLASS } from '../utils/constants'
+import { STATUS_LABELS, QUOTE_STATUSES, DISCOUNT_APPROVAL_STATUS_LABELS, DISCOUNT_APPROVAL_BADGE_CLASS, BLOCKING_APPROVAL_STATUSES } from '../utils/constants'
 import { useAuth } from '../context/AuthContext'
 import QuoteEditor from './QuoteEditor'
 
@@ -148,16 +148,25 @@ function QuoteList() {
     }
   }
 
-  const handleDownloadPDF = (quoteId) => withBusy(quoteId, async () => {
-    const blob = await api.generatePDF(quoteId)
+  const downloadBlob = (blob, filename) => {
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `quote-${quoteId}.pdf`
+    a.download = filename
     document.body.appendChild(a)
     a.click()
     window.URL.revokeObjectURL(url)
     document.body.removeChild(a)
+  }
+
+  const handleDownloadPDF = (quoteId) => withBusy(quoteId, async () => {
+    downloadBlob(await api.generatePDF(quoteId), `quote-${quoteId}.pdf`)
+  })
+
+  // In the quote's own language, like the offer PDF (a French quote gets a "bon de commande").
+  const handleDownloadOrderForm = (quote) => withBusy(quote.id, async () => {
+    const prefix = quote.language === 'fr' ? 'Bon_de_commande' : 'Bestelbon'
+    downloadBlob(await api.generateOrderForm(quote.id), `${prefix}_${formatQuoteNumber(quote)}.pdf`)
   })
 
   const handleDuplicate = (quoteId) => withBusy(quoteId, async () => {
@@ -368,6 +377,18 @@ function QuoteList() {
                         <button className="btn btn-primary" onClick={() => handleDownloadPDF(quote.id)} disabled={busyIds.includes(quote.id)}>
                           PDF
                         </button>
+                        {!quote.isShowroom && (
+                          <button
+                            className="btn btn-outline"
+                            onClick={() => handleDownloadOrderForm(quote)}
+                            disabled={busyIds.includes(quote.id) || BLOCKING_APPROVAL_STATUSES.includes(quote.discountApprovalStatus)}
+                            title={BLOCKING_APPROVAL_STATUSES.includes(quote.discountApprovalStatus)
+                              ? 'De korting moet eerst goedgekeurd worden door een sales manager'
+                              : 'Bestelbon afdrukken om te laten ondertekenen'}
+                          >
+                            Bestelbon
+                          </button>
+                        )}
                         {!quote.isShowroom && (
                           <button className="btn btn-outline" onClick={() => setEditingQuoteId(quote.id)}>
                             Bewerken

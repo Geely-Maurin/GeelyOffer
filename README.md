@@ -14,6 +14,7 @@ Internal quotation tool for the Unicars Geely dealership. Salespeople build a ve
 - 📄 **CSV export** — full quotes list for reporting
 - 💰 **Correct BTW math** — Geely's published prices are already VAT-inclusive; excl./incl. BTW are shown consistently everywhere (app and PDF)
 - 📑 **Branded PDF** — cover page with vehicle photo, pricing breakdown, standard equipment
+- ✍️ **Bestelbon** — once the customer says yes, the "Bestelbon" button on a quote prints the order form to sign: the dealership's paper bestelbon (branch letterhead, model, options, totals, trade-in, warranty, general conditions and privacy statement, wording in `backend/src/data/orderFormText.js`) in the offer's style, A4. A French quote gets a French "bon de commande" (`orderFormText.fr.js`, AI-drafted — have it reviewed before relying on it)
 - 💾 **SQLite** — file-based storage; see [DEPLOYMENT.md](./DEPLOYMENT.md) for why the file's location matters once this is hosted online
 - 🧪 **Automated tests** — pricing math, equipment data, and an end-to-end auth/quote integration test (`npm test`)
 
@@ -99,6 +100,7 @@ All routes except `/health`, `/api/auth/login`, and static assets require a logg
 - `GET/POST/PUT/DELETE /api/quotes`, plus `/api/quotes/:id/duplicate`, `/api/quotes/:id/send-email`, `/api/quotes/export.csv`
 - `POST /api/pricing/calculate`, `GET /api/pricing/discount-tier/:quantity`
 - `GET /api/pdf/:quoteId`
+- `GET /api/order-form/:quoteId` (bestelbon PDF; refused for a showroom offer or a discount still awaiting approval)
 - `GET /api/admin/backup` (admin)
 
 ## Pricing logic

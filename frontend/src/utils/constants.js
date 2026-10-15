@@ -45,6 +45,11 @@ export const DISCOUNT_APPROVAL_STATUS_LABELS = {
   rejected: 'Korting geweigerd',
 }
 
+// Mirrors BLOCKING_APPROVAL_STATUSES in backend/src/routes/quotes.js: a quote whose
+// discount is still waiting for (or was refused) sign-off can't be sent, accepted or turned
+// into a bestelbon yet.
+export const BLOCKING_APPROVAL_STATUSES = ['pending', 'rejected']
+
 export const DISCOUNT_APPROVAL_BADGE_CLASS = {
   pending: 'expiry-soon',
   approved: 'accepted',

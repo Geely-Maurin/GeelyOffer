@@ -385,4 +385,126 @@ describe('server integration', () => {
     const blockedRes = await fetch(`${BASE_URL}/api/users`, { headers: { Cookie: salesCookie } });
     assert.equal(blockedRes.status, 403);
   });
+
+  test('the seeded branches carry the bestelbon letterhead phone and e-mail', async () => {
+    const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+    });
+    const cookie = extractCookie(loginRes);
+    const branches = await (await fetch(`${BASE_URL}/api/branches`, { headers: { Cookie: cookie } })).json();
+    const roeselare = branches.find((b) => b.id === 'roeselare');
+    assert.equal(roeselare.phone, 'ROE 051 97 19 17');
+    assert.equal(roeselare.email, 'verkoop.roeselare@geely-maurin.be');
+  });
+
+  test('a bestelbon downloads for a customer quote, but not for a showroom offer or an unapproved discount', async () => {
+    const adminLogin = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+    });
+    const adminCookie = extractCookie(adminLogin);
+
+    const quoteRes = await fetch(`${BASE_URL}/api/quotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
+      body: JSON.stringify({
+        customerName: 'Bestelbon Klant',
+        customerEmail: 'klant@example.be',
+        selectedVehicleId: 'geely-e2-max',
+        configuration: { vehicleName: 'Geely E2', vehicleModel: 'MAX' },
+        accessories: [],
+        tradeInEnabled: true,
+        tradeInMake: 'Volkswagen',
+        tradeInModel: 'Golf',
+        tradeInMileage: 112000,
+        tradeInValue: 6500,
+      }),
+    });
+    assert.equal(quoteRes.status, 201);
+    const quote = await quoteRes.json();
+
+    const pdfRes = await fetch(`${BASE_URL}/api/order-form/${quote.id}`, { headers: { Cookie: adminCookie } });
+    assert.equal(pdfRes.status, 200);
+    assert.equal(pdfRes.headers.get('content-type'), 'application/pdf');
+    assert.match(pdfRes.headers.get('content-disposition'), /filename="Bestelbon_Geely_OFF-\d{4}_Bestelbon_Klant\.pdf"/);
+    const pdf = Buffer.from(await pdfRes.arrayBuffer());
+    assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
+
+    const unauthenticated = await fetch(`${BASE_URL}/api/order-form/${quote.id}`);
+    assert.equal(unauthenticated.status, 401);
+
+    // A French quote gets the French "bon de commande".
+    const frRes = await fetch(`${BASE_URL}/api/quotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
+      body: JSON.stringify({
+        customerName: 'Client Francophone',
+        selectedVehicleId: 'starray-emi-pro',
+        configuration: { vehicleName: 'Starray EM-i', vehicleModel: 'PRO' },
+        accessories: [],
+        language: 'fr',
+      }),
+    });
+    assert.equal(frRes.status, 201);
+    const frQuote = await frRes.json();
+    const frPdf = await fetch(`${BASE_URL}/api/order-form/${frQuote.id}`, { headers: { Cookie: adminCookie } });
+    assert.equal(frPdf.status, 200);
+    assert.match(frPdf.headers.get('content-disposition'), /filename="Bon_de_commande_Geely_OFF-\d{4}_Client_Francophone\.pdf"/);
+    assert.equal(Buffer.from(await frPdf.arrayBuffer()).subarray(0, 5).toString(), '%PDF-');
+    await fetch(`${BASE_URL}/api/quotes/${frQuote.id}`, { method: 'DELETE', headers: { Cookie: adminCookie } });
+
+    const showroomRes = await fetch(`${BASE_URL}/api/quotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
+      body: JSON.stringify({ isShowroom: true, selectedVehicleId: 'geely-e5-pro', configuration: { vehicleName: 'Geely E5', vehicleModel: 'PRO' }, accessories: [] }),
+    });
+    const showroom = await showroomRes.json();
+    const showroomPdf = await fetch(`${BASE_URL}/api/order-form/${showroom.id}`, { headers: { Cookie: adminCookie } });
+    assert.equal(showroomPdf.status, 400);
+
+    // A rep's discount above the approval threshold stays 'pending' until a manager signs
+    // off — no bestelbon until then.
+    const repEmail = 'order-form-rep@geely.local';
+    const createRep = await fetch(`${BASE_URL}/api/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: adminCookie },
+      body: JSON.stringify({ name: 'Order Form Rep', email: repEmail, phone: '0470000001', password: 'OrderFormRep123!', role: 'sales' }),
+    });
+    assert.equal(createRep.status, 201);
+    const repLogin = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: repEmail, password: 'OrderFormRep123!' }),
+    });
+    const repCookie = extractCookie(repLogin);
+    const changed = await fetch(`${BASE_URL}/api/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: repCookie },
+      body: JSON.stringify({ currentPassword: 'OrderFormRep123!', newPassword: 'OrderFormRep456!' }),
+    });
+    assert.equal(changed.status, 200);
+    const pendingRes = await fetch(`${BASE_URL}/api/quotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: repCookie },
+      body: JSON.stringify({
+        customerName: 'Grote Korting Klant',
+        selectedVehicleId: 'geely-e5-pro',
+        configuration: { vehicleName: 'Geely E5', vehicleModel: 'PRO' },
+        accessories: [],
+        discountType: 'percentage',
+        discountValue: 20,
+      }),
+    });
+    const pending = await pendingRes.json();
+    assert.equal(pending.discountApprovalStatus, 'pending');
+    const pendingPdf = await fetch(`${BASE_URL}/api/order-form/${pending.id}`, { headers: { Cookie: repCookie } });
+    assert.equal(pendingPdf.status, 400);
+
+    for (const id of [quote.id, showroom.id, pending.id]) {
+      await fetch(`${BASE_URL}/api/quotes/${id}`, { method: 'DELETE', headers: { Cookie: adminCookie } });
+    }
+  });
 });

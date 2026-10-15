@@ -11,8 +11,10 @@ import { LOCALE, PDF, resolveLang, translateFuel, translateTransmission, powerUn
 import { formatQuoteNumber } from '../utils/quoteNumber.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const LOGO_PATH = path.join(__dirname, '../assets/geely-logo.png');
-const LOGO_ASPECT = 114 / 459; // height / width of the source logo file
+// Exported (with registerFonts and resolveExteriorImagePath below) for the bestelbon in
+// routes/orderForm.js, so both customer documents share one logo, typeface and photo set.
+export const LOGO_PATH = path.join(__dirname, '../assets/geely-logo.png');
+export const LOGO_ASPECT = 114 / 459; // height / width of the source logo file
 
 const VEHICLE_IMAGES = {
   'Geely E5': path.join(__dirname, '../assets/vehicles/geely-e5.jpg'),
@@ -69,7 +71,9 @@ const VEHICLE_UPHOLSTERY_IMAGES = {
 // The legal entity actually issuing the quote (a Geely dealer) — distinct from "Geely",
 // the vehicle brand shown via the logo/imagery elsewhere on the PDF. Not per-branch or
 // per-quote data, so it's a plain constant rather than something stored on the quote.
-const SELLER_COMPANY = { name: 'ABS NV', vatNumber: 'BE0475949603' };
+// Shared with the bestelbon (routes/orderForm.js) so the two customer documents always
+// name the same seller. The VAT number is ABS's, as on the paper bestelbon templates.
+export const SELLER_COMPANY = { name: 'ABS NV', vatNumber: 'BE0636.932.979' };
 
 // Same typeface as the web app (frontend/index.html) — kept as static weights rather
 // than the variable font, since pdfkit renders whatever instance it's given as-is.
@@ -81,8 +85,20 @@ const FONTS = {
   'Inter-Bold': path.join(FONT_DIR, 'Inter-Bold.ttf'),
 };
 
-function registerFonts(doc) {
+export function registerFonts(doc) {
   Object.entries(FONTS).forEach(([name, file]) => doc.registerFont(name, file));
+}
+
+// Photo matching whichever exterior color the quote actually has on it (a quote_items row
+// whose name is a known paint color), falling back to the model's default photo for a
+// color Geely hasn't been photographed in yet, or none picked. Undefined for a model
+// without any photo.
+export function resolveExteriorImagePath(vehicle, items) {
+  const selectedColorItem = items.find((item) => VEHICLE_COLOR_IMAGES[item.itemName]);
+  const hasStandardPaint = items.some((item) => item.itemName === STANDARD_PAINT_NAME);
+  return (selectedColorItem && VEHICLE_COLOR_IMAGES[selectedColorItem.itemName])
+    || (hasStandardPaint && VEHICLE_STANDARD_COLOR_IMAGES[vehicle.name])
+    || VEHICLE_IMAGES[vehicle.name];
 }
 
 const PAGE_LEFT = 40;
@@ -419,14 +435,8 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
 
   doc.moveTo(PAGE_LEFT, 85).lineTo(PAGE_RIGHT, 85).stroke('#1F4E78');
 
-  // Hero vehicle photo — matches whichever exterior color the quote actually has on it
-  // (a quote_items row whose name is a known paint color), falling back to the model's
-  // default photo for a color Geely hasn't been photographed in yet, or none picked.
-  const selectedColorItem = items.find((item) => VEHICLE_COLOR_IMAGES[item.itemName]);
-  const hasStandardPaint = items.some((item) => item.itemName === STANDARD_PAINT_NAME);
-  const heroImagePath = (selectedColorItem && VEHICLE_COLOR_IMAGES[selectedColorItem.itemName])
-    || (hasStandardPaint && VEHICLE_STANDARD_COLOR_IMAGES[vehicle.name])
-    || VEHICLE_IMAGES[vehicle.name];
+  // Hero vehicle photo, in the quote's exterior color where there's a photo of it.
+  const heroImagePath = resolveExteriorImagePath(vehicle, items);
   let cursorY = 105;
   if (heroImagePath) {
     const img = doc.openImage(heroImagePath);

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import { api } from '../utils/api'
 
-const EMPTY_FORM = { name: '', address: '', active: true }
+const EMPTY_FORM = { name: '', address: '', phone: '', email: '', active: true }
 
 function BranchFormModal({ branch, onClose, onSaved }) {
   const [form, setForm] = useState(branch ? {
-    name: branch.name, address: branch.address, active: !!branch.active,
+    name: branch.name, address: branch.address, phone: branch.phone || '', email: branch.email || '', active: !!branch.active,
   } : EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -17,7 +17,7 @@ function BranchFormModal({ branch, onClose, onSaved }) {
     setError('')
     setSaving(true)
     try {
-      const payload = { name: form.name, address: form.address, active: form.active }
+      const payload = { name: form.name, address: form.address, phone: form.phone, email: form.email, active: form.active }
       if (branch) {
         await api.updateBranch(branch.id, payload)
       } else {
@@ -51,6 +51,17 @@ function BranchFormModal({ branch, onClose, onSaved }) {
             <label>Adres</label>
             <input value={form.address} onChange={(e) => set('address', e.target.value)} required placeholder="Ovenstraat 15, 8800 Roeselare" />
           </div>
+          <div className="form-group">
+            <label>Telefoon</label>
+            <input value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="ROE 051 97 19 17" />
+          </div>
+          <div className="form-group">
+            <label>E-mail</label>
+            <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="verkoop.roeselare@geely-maurin.be" />
+          </div>
+          <p style={{ color: 'var(--muted)', fontSize: '0.8rem', marginTop: '-4px' }}>
+            Telefoon en e-mail staan in de hoofding van de bestelbon, zoals ingevuld.
+          </p>
           <div className="form-group">
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'none' }}>
               <input type="checkbox" checked={form.active} onChange={(e) => set('active', e.target.checked)} style={{ width: '16px', height: '16px' }} />
@@ -105,6 +116,7 @@ function AdminBranches() {
               <tr>
                 <th>Naam</th>
                 <th>Adres</th>
+                <th>Contact</th>
                 <th>Status</th>
                 <th>Acties</th>
               </tr>
@@ -114,6 +126,14 @@ function AdminBranches() {
                 <tr key={b.id}>
                   <td style={{ fontWeight: 700 }}>{b.name}</td>
                   <td>{b.address}</td>
+                  <td style={{ fontSize: '0.85rem' }}>
+                    {b.phone || b.email ? (
+                      <>
+                        {b.phone && <div>{b.phone}</div>}
+                        {b.email && <div style={{ color: 'var(--muted)' }}>{b.email}</div>}
+                      </>
+                    ) : <span style={{ color: 'var(--muted)' }}>—</span>}
+                  </td>
                   <td><span className={`badge ${b.active ? 'sent' : 'draft'}`}>{b.active ? 'Actief' : 'Inactief'}</span></td>
                   <td>
                     <button className="btn btn-outline" style={{ padding: '7px 12px', fontSize: '0.8rem' }} onClick={() => setEditing(b)}>

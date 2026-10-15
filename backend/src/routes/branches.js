@@ -24,13 +24,16 @@ router.get('/', async (req, res) => {
 
 router.post('/', requireAdmin, async (req, res) => {
   try {
-    const { name, address } = req.body;
+    const { name, address, phone, email } = req.body;
     if (!name || !address) {
       return res.status(400).json({ error: 'Naam en adres zijn verplicht' });
     }
 
     const id = uuidv4();
-    await runAsync('INSERT INTO branches (id, name, address, active) VALUES (?, ?, ?, 1)', [id, name, address]);
+    await runAsync(
+      'INSERT INTO branches (id, name, address, phone, email, active) VALUES (?, ?, ?, ?, ?, 1)',
+      [id, name, address, phone?.trim() || null, email?.trim() || null]
+    );
 
     const row = await getAsync('SELECT * FROM branches WHERE id = ?', [id]);
     res.status(201).json({ ...row, active: !!row.active });
@@ -46,12 +49,16 @@ router.put('/:id', requireAdmin, async (req, res) => {
       return res.status(404).json({ error: 'Vestiging niet gevonden' });
     }
 
-    const { name, address, active } = req.body;
+    const { name, address, phone, email, active } = req.body;
+    // A cleared phone/e-mail is stored as '' rather than NULL, so the boot-time backfill in
+    // database/init.js doesn't put the default back.
     await runAsync(
-      'UPDATE branches SET name = ?, address = ?, active = ? WHERE id = ?',
+      'UPDATE branches SET name = ?, address = ?, phone = ?, email = ?, active = ? WHERE id = ?',
       [
         name ?? existing.name,
         address ?? existing.address,
+        phone === undefined ? existing.phone : String(phone ?? '').trim(),
+        email === undefined ? existing.email : String(email ?? '').trim(),
         active === undefined ? existing.active : (active ? 1 : 0),
         req.params.id,
       ]
