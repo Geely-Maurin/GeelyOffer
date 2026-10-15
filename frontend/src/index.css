@@ -857,6 +857,20 @@ textarea {
   margin-bottom: 18px;
 }
 
+.missing-fields-list {
+  background: #fff2f0;
+  border: 1px solid #ffccc7;
+  color: #d2211e;
+  border-radius: var(--radius);
+  padding: 12px 14px 12px 34px;
+  margin: 12px 0 20px;
+  font-weight: 600;
+}
+
+.missing-fields-list li + li {
+  margin-top: 4px;
+}
+
 .customer-history-notice {
   background: var(--primary-soft);
   border: 1px solid var(--border-strong);

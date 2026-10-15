@@ -7,9 +7,11 @@ import {
   SINGLE_SELECT_CATEGORIES, STANDARD_PAINT_ACCESSORY_ID,
 } from '../utils/constants'
 import { accessoryAppliesToVehicle } from '../utils/accessoryScope'
+import { missingCustomerFields } from '../utils/customerInfo'
 import { useAuth } from '../context/AuthContext'
 import CustomerForm from './CustomerForm'
 import TradeInForm from './TradeInForm'
+import MissingCustomerInfoModal from './MissingCustomerInfoModal'
 import AccessoriesSelector from './AccessoriesSelector'
 import PricingSummary from './PricingSummary'
 
@@ -20,23 +22,14 @@ function needsApprovalWarning(discountType, discountValue, role) {
     : discountValue > DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE
 }
 
-// Naam, e-mail, telefoon en volledig adres are always required; a "bedrijf" customer
-// additionally needs a company name and VAT number.
-function isCustomerInfoComplete(info) {
-  const base = info.customerName && info.customerEmail && info.customerPhone
-    && info.customerStreet && info.customerPostalCode && info.customerCity
-  if (!base) return false
-  if (info.customerType === 'bedrijf') {
-    return Boolean(info.customerCompany && info.customerVatNumber)
-  }
-  return true
-}
-
 function QuoteEditor({ quoteId, onClose, onSaved }) {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  // Required customer fields still empty when "Wijzigingen opslaan" was clicked; non-null
+  // shows the pop-up listing them.
+  const [missingFields, setMissingFields] = useState(null)
 
   const [vehicle, setVehicle] = useState(null)
   const [accessoriesCatalog, setAccessoriesCatalog] = useState([])
@@ -196,8 +189,9 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
   }, [vehicle, accessoriesCatalog, selectedAccessories])
 
   const handleSave = async () => {
-    if (!isCustomerInfoComplete(customerInfo)) {
-      setError('Vul alle verplichte klantgegevens in')
+    const missing = missingCustomerFields(customerInfo)
+    if (missing.length > 0) {
+      setMissingFields(missing)
       return
     }
     try {
@@ -249,6 +243,13 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
         </div>
 
         {error && <div className="error">{error}</div>}
+        {missingFields && (
+          <MissingCustomerInfoModal
+            missingFields={missingFields}
+            message="De wijzigingen kunnen nog niet opgeslagen worden."
+            onClose={() => setMissingFields(null)}
+          />
+        )}
         {isLockedAccepted && (
           <div className="customer-history-notice">
             <strong>Al geaccepteerd door de klant.</strong> Deze offerte kan niet meer gewijzigd worden — enkel een sales manager of beheerder kan een reeds geaccepteerde offerte nog aanpassen.

@@ -6,6 +6,7 @@ import {
   SINGLE_SELECT_CATEGORIES, STANDARD_PAINT_ACCESSORY_ID,
 } from '../utils/constants'
 import { accessoryAppliesToVehicle } from '../utils/accessoryScope'
+import { missingCustomerFields } from '../utils/customerInfo'
 import { useAuth } from '../context/AuthContext'
 import VehicleSelector from './VehicleSelector'
 import VariantSelector from './VariantSelector'
@@ -13,6 +14,7 @@ import AccessoriesSelector from './AccessoriesSelector'
 import PricingSummary from './PricingSummary'
 import CustomerForm from './CustomerForm'
 import TradeInForm from './TradeInForm'
+import MissingCustomerInfoModal from './MissingCustomerInfoModal'
 import { VEHICLE_IMAGES, VEHICLE_COLOR_FRONT_IMAGES, VEHICLE_STANDARD_COLOR_IMAGES, STANDARD_PAINT_NAME, VEHICLE_REAR_IMAGES, VEHICLE_INTERIOR_IMAGES, VEHICLE_UPHOLSTERY_IMAGES } from '../utils/vehicleImages'
 
 function needsApprovalWarning(discountType, discountValue, role) {
@@ -20,19 +22,6 @@ function needsApprovalWarning(discountType, discountValue, role) {
   return discountType === 'fixed'
     ? discountValue > DISCOUNT_APPROVAL_THRESHOLD_FIXED
     : discountValue > DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE
-}
-
-// Naam, e-mail, telefoon en volledig adres are always required; a "bedrijf" customer
-// additionally needs a company name and VAT number — so the offer always carries
-// everything needed to actually contact and (for a company) invoice the customer.
-function isCustomerInfoComplete(info) {
-  const base = info.customerName && info.customerEmail && info.customerPhone
-    && info.customerStreet && info.customerPostalCode && info.customerCity
-  if (!base) return false
-  if (info.customerType === 'bedrijf') {
-    return Boolean(info.customerCompany && info.customerVatNumber)
-  }
-  return true
 }
 
 // Known specification keys, in display order — label lookup with a fallback to the
@@ -103,6 +92,9 @@ function QuoteBuilder({ onQuoteCreated }) {
   const [pricing, setPricing] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // Required customer fields still empty when "Offerte aanmaken" was clicked; non-null
+  // shows the pop-up listing them.
+  const [missingFields, setMissingFields] = useState(null)
   const [customerInfo, setCustomerInfo] = useState({
     customerName: '',
     customerEmail: '',
@@ -309,8 +301,9 @@ function QuoteBuilder({ onQuoteCreated }) {
   }
 
   const handleCreateQuote = async () => {
-    if (!isCustomerInfoComplete(customerInfo)) {
-      setError('Vul alle verplichte klantgegevens in')
+    const missing = missingCustomerFields(customerInfo)
+    if (missing.length > 0) {
+      setMissingFields(missing)
       setStep(4)
       return
     }
@@ -413,6 +406,13 @@ function QuoteBuilder({ onQuoteCreated }) {
   return (
     <div className="page-shell">
       {error && <div className="error">{error}</div>}
+      {missingFields && (
+        <MissingCustomerInfoModal
+          missingFields={missingFields}
+          message="De offerte kan nog niet aangemaakt worden."
+          onClose={() => setMissingFields(null)}
+        />
+      )}
 
       <div className="card offer-type-card">
         <div className="section-kicker">Wat wil je maken?</div>
@@ -719,7 +719,7 @@ function QuoteBuilder({ onQuoteCreated }) {
                   <button
                     className="btn btn-success"
                     onClick={handleCreateQuote}
-                    disabled={loading || !isCustomerInfoComplete(customerInfo)}
+                    disabled={loading}
                   >
                     {loading ? 'Aanmaken...' : 'Offerte aanmaken'}
                   </button>
