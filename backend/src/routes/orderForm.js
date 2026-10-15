@@ -8,7 +8,7 @@ import { loadQuoteForPdf, registerFonts, resolveExteriorImagePath, LOGO_PATH, LO
 import { BLOCKING_APPROVAL_STATUSES } from './quotes.js';
 import { ORDER_FORM_TEXT_NL, STANDARD_UPHOLSTERY } from '../data/orderFormText.js';
 import { ORDER_FORM_TEXT_FR } from '../data/orderFormText.fr.js';
-import { LOCALE, resolveLang, translateAccessoryName, translateFuel, powerUnit } from '../i18n/translate.js';
+import { LOCALE, resolveLang, translateAccessoryName, translateFuel, powerUnit, DELIVERY_PACK_NAME, deliveryPackContents } from '../i18n/translate.js';
 
 // The bestelbon: the dealership's paper order form (contract) for a quote the customer
 // has said yes to — same branch letterhead, model/options/totals/trade-in blocks and full
@@ -36,7 +36,6 @@ const PANEL_BORDER = '#E5E7EB';
 const RULE = '#DADFE5';
 const BLANK_LINE = '#9AA3AD';
 
-const DELIVERY_PACK_NAME = 'Delivery Pack';
 const PAINT_PREFIXES = ['Metallic:', 'Standaardlak:', 'Standaardkleur:'];
 const UPHOLSTERY_PREFIX = 'Bekleding:';
 
@@ -516,7 +515,7 @@ function drawOptionsTable(doc, flow, { quote, vehicle, classified, t, lang }) {
     upholstery
       ? { label: labels.interior, text: itemLabel(upholstery, lang), price: upholstery.totalPrice }
       : { label: labels.interior, text: standardUpholstery ? `${standardUpholstery} ${labels.standardInteriorSuffix}` : '', price: standardUpholstery ? 0 : null },
-    deliveryPack ? { label: labels.deliveryPack, text: '', price: deliveryPack.totalPrice } : null,
+    deliveryPack ? { label: labels.deliveryPack, text: '', note: deliveryPackContents(vehicle, lang), price: deliveryPack.totalPrice } : null,
     ...(options.length > 0
       ? options.map((item, i) => ({ label: labels.option(i + 1), text: itemLabel(item, lang), price: item.totalPrice }))
       : [{ label: labels.option(1), text: labels.noOption, price: null }]),
@@ -529,7 +528,9 @@ function drawOptionsTable(doc, flow, { quote, vehicle, classified, t, lang }) {
   const priceRight = PAGE_RIGHT - 12;
   const measured = rows.map((row) => {
     const lines = row.text ? wrapText(doc, row.text, textWidthMax, { size: 9 }) : [];
-    return { ...row, lines, height: Math.max(22, lines.length * 12 + 10) };
+    // A row's note (the Delivery Pack contents) is set small and grey under its text.
+    const noteLines = row.note ? wrapText(doc, row.note, textWidthMax, { size: 7 }) : [];
+    return { ...row, lines, noteLines, height: Math.max(22, lines.length * 12 + noteLines.length * 9 + 10) };
   });
 
   const drawBar = () => {
@@ -548,6 +549,8 @@ function drawOptionsTable(doc, flow, { quote, vehicle, classified, t, lang }) {
     if (index % 2 === 1) doc.save().rect(PAGE_LEFT, flow.y, CONTENT_WIDTH, row.height).fill('#F9FAFB').restore();
     put(doc, row.label, labelX, flow.y + 6, { font: 'Inter-SemiBold', size: 9, color: INK });
     row.lines.forEach((line, i) => put(doc, line, textX, flow.y + 6 + i * 12, { size: 9, color: BODY }));
+    const noteTop = flow.y + 7.5 + row.lines.length * 12;
+    row.noteLines.forEach((line, i) => put(doc, line, textX, noteTop + i * 9, { size: 7, color: MUTED }));
     if (row.price !== null && row.price !== undefined) {
       putRight(doc, formatPrice(row.price), priceRight, flow.y + 6, { size: 9, color: INK });
     }

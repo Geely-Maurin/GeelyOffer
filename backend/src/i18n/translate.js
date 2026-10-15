@@ -75,6 +75,36 @@ export function translateAccessoryName(name, lang) {
   return name;
 }
 
+// What the Delivery Pack includes — printed in small letters under its line on both the
+// offer PDF (routes/pdf.js) and the bestelbon (routes/orderForm.js), so the two can never
+// disagree. Matched on the catalog name 'Delivery Pack'. The full tank is only listed for
+// a plug-in hybrid (vehicle.fuel 'Plug-in Hybrid'); the 100% battery is listed for every model.
+export const DELIVERY_PACK_NAME = 'Delivery Pack';
+const PHEV_FUEL = 'Plug-in Hybrid';
+export const DELIVERY_PACK_CONTENTS = {
+  nl: {
+    prefix: 'Inbegrepen:',
+    legalKit: 'Wettelijke kit',
+    battery: '100% batterij',
+    fullTank: 'Volle tank',
+    mats: 'Rubber matten voor en achter',
+  },
+  fr: {
+    prefix: 'Inclus :',
+    legalKit: 'Kit légal',
+    battery: 'Batterie chargée à 100 %',
+    fullTank: 'Plein de carburant',
+    mats: 'Tapis en caoutchouc avant et arrière',
+  },
+};
+
+// Spaces inside an item are non-breaking, so a wrapped line only ever breaks between items.
+export function deliveryPackContents(vehicle, lang) {
+  const t = DELIVERY_PACK_CONTENTS[resolveLang(lang)];
+  const items = [t.legalKit, t.battery, ...(vehicle?.fuel === PHEV_FUEL ? [t.fullTank] : []), t.mats];
+  return `${t.prefix} ${items.map((item) => item.replace(/ /g, ' ')).join(' · ')}`;
+}
+
 export const PDF = {
   nl: {
     kickerPrefix: 'OFFERTE',

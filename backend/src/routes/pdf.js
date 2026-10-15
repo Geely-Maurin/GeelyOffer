@@ -7,7 +7,7 @@ import { formatPrice } from '../utils/pricing.js';
 import { getStandardEquipment } from '../data/standardEquipment.js';
 import { getTechnicalSpecs, getWarrantyInfo } from '../data/technicalSpecs.js';
 import { requireAuth, blockPendingPasswordChange } from '../middleware/auth.js';
-import { LOCALE, PDF, resolveLang, translateFuel, translateTransmission, powerUnit, fuelKicker, translateAccessoryName } from '../i18n/translate.js';
+import { LOCALE, PDF, resolveLang, translateFuel, translateTransmission, powerUnit, fuelKicker, translateAccessoryName, DELIVERY_PACK_NAME, deliveryPackContents } from '../i18n/translate.js';
 import { formatQuoteNumber } from '../utils/quoteNumber.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -594,13 +594,22 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
       unitPrice: item.unitPrice,
       quantity: item.quantity,
       totalPrice: item.totalPrice,
+      // The Delivery Pack lists what it includes in small grey letters under its name.
+      note: item.itemName === DELIVERY_PACK_NAME ? deliveryPackContents(vehicle, lang) : null,
     })),
   ];
 
-  const rowHeight = 18;
+  const baseRowHeight = 18;
+  const noteFontSize = 7;
+  const noteLineGap = 1;
   const pageBottomForTable = doc.page.height - doc.page.margins.bottom;
+  rows.forEach((row) => {
+    doc.font('Inter').fontSize(noteFontSize);
+    row.noteHeight = row.note ? doc.heightOfString(row.note, { width: 290, lineGap: noteLineGap }) : 0;
+  });
   doc.font('Inter').fontSize(9);
   rows.forEach((row, index) => {
+    const rowHeight = baseRowHeight + (row.note ? row.noteHeight + 2 : 0);
     // A catalog with enough options selected can push this table past the bottom
     // margin — pdfkit's own auto-pagination on .text() would silently insert a page
     // here without this yPos tracker knowing, corrupting every section drawn below
@@ -622,6 +631,11 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
     doc.text(formatPrice(row.unitPrice), 350, yPos + 4);
     doc.text(row.quantity.toString(), 430, yPos + 4);
     doc.text(formatPrice(row.totalPrice), 480, yPos + 4);
+    if (row.note) {
+      doc.fillColor('#666').font('Inter').fontSize(noteFontSize)
+        .text(row.note, 50, yPos + 16, { width: 290, lineGap: noteLineGap });
+      doc.fillColor('#000').font('Inter').fontSize(9);
+    }
     yPos += rowHeight;
   });
 
