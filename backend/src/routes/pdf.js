@@ -590,7 +590,9 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
   const rows = [
     { name: vehicleLabel, unitPrice: quote.basePrice, quantity: 1, totalPrice: quote.basePrice },
     ...items.map(item => ({
-      name: translateAccessoryName(item.itemName, lang) + (item.discountable ? '' : ` (${T.nonDiscountableTag})`),
+      // The Delivery Pack is never tagged: it isn't an accessoire, and its contents line says what it is.
+      name: translateAccessoryName(item.itemName, lang)
+        + (item.discountable || item.itemName === DELIVERY_PACK_NAME ? '' : ` (${T.nonDiscountableTag})`),
       unitPrice: item.unitPrice,
       quantity: item.quantity,
       totalPrice: item.totalPrice,
