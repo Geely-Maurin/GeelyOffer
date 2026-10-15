@@ -1198,11 +1198,6 @@ textarea {
   color: #389e0d;
 }
 
-.price-divider {
-  border-top: 1px solid var(--border);
-  margin: 4px 0 8px;
-}
-
 .price-row.total {
   border-bottom: none;
   border-top: 2px solid var(--text);
@@ -1211,6 +1206,18 @@ textarea {
   font-size: 1.2rem;
   font-weight: 800;
   color: var(--accent);
+}
+
+/* The BTW / excl.-BTW split right under the incl.-BTW total: a breakdown of it, not a
+   further step, so smaller and quieter than the ladder rows. */
+.price-row.price-row--breakdown {
+  padding: 6px 0;
+  font-size: 0.85rem;
+}
+
+.price-row--breakdown .price-value {
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .vat-note {

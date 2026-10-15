@@ -629,12 +629,13 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
   yPos += 16;
 
   const hasTradeIn = quote.tradeInEnabled && quote.tradeInValue > 0;
+  const boxHeight = hasTradeIn ? 128 : 80;
 
-  // The subtotal/discount lines and the excl./incl.-BTW box below all belong to one
-  // visual unit (the running price ladder) — if it doesn't fit as a whole, break before
-  // any of it starts rather than splitting it awkwardly across two pages.
+  // The subtotal/discount lines and the totals box below all belong to one visual unit
+  // (the running price ladder) — if it doesn't fit as a whole, break before any of it
+  // starts rather than splitting it awkwardly across two pages.
   const priceLadderHeight = 18 + (quote.discountAmount > 0 ? 18 : 0) + 6
-    + (hasTradeIn ? 13 : 0) + (hasTradeIn ? 118 : 76) + (hasTradeIn ? 12 : 0);
+    + (hasTradeIn ? 13 : 0) + boxHeight + (hasTradeIn ? 12 : 0);
   if (yPos + priceLadderHeight > pageBottomForTable) {
     doc.addPage();
     drawContinuationHeader(doc, docTitle, vehicleLabel, smallLogoWidth);
@@ -658,12 +659,15 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
   }
   yPos += 6;
 
-  // Excl./BTW/incl. summary box — a trade-in deduction (if any) is added as two more
-  // rows of the SAME box, right below the incl.-BTW total, instead of a second separate
-  // card. It's really just the next two lines of one running total ("this is the car's
-  // price, this is what you get for your old one, this is what's left to pay"), and
-  // folding it in keeps the whole price ladder compact — worth doing deliberately, not
-  // just to save space, since one continuous box also reads more clearly than two.
+  // Totals box. Same flow as the bestelbon's totals card (TOTAAL WAGEN → KORTING → NETTO
+  // TOTAAL → Btw-bedrag): the ladder above runs in incl.-BTW amounts, so the box opens with
+  // its result, the incl.-BTW total, then the BTW in it and what's left excl. BTW, in
+  // smaller grey type. Showing excl./BTW first made the incl. total look like a step after
+  // the VAT instead of the line straight after the discount.
+  // A trade-in deduction (if any) is added as two more rows of the SAME box instead of a
+  // second separate card. It's really just the next two lines of one running total ("this
+  // is the car's price, this is what you get for your old one, this is what's left to
+  // pay"), and one continuous box reads more clearly than two.
   const boxWidth = 260;
   const boxX = PAGE_RIGHT - boxWidth;
   const boxPadding = 14;
@@ -684,27 +688,27 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
     yPos += 13;
   }
 
-  const boxHeight = hasTradeIn ? 118 : 76;
   doc.roundedRect(boxX, yPos, boxWidth, boxHeight, 8).fillAndStroke('#F6F7F9', '#E5E7EB');
 
   let rowY = yPos + 14;
-  doc.font('Inter').fontSize(9).fillColor('#333');
-  doc.text(T.totalExclVat, boxX + boxPadding, rowY, { width: labelWidth });
-  doc.text(formatPrice(quote.subtotal), valueX, rowY, { width: valueWidth, align: 'right' });
-
-  rowY += 16;
-  doc.text(T.vat21, boxX + boxPadding, rowY, { width: labelWidth });
-  doc.text(formatPrice(quote.vatAmount), valueX, rowY, { width: valueWidth, align: 'right' });
-
-  rowY += 20;
-  doc.moveTo(boxX + boxPadding, rowY - 7).lineTo(boxX + boxWidth - boxPadding, rowY - 7).stroke('#CBD3DB');
-
   doc.font('Inter-Bold').fontSize(12).fillColor('#1F4E78');
   doc.text(T.totalInclVatLine, boxX + boxPadding, rowY, { width: labelWidth });
   doc.text(formatPrice(quote.totalPrice), valueX, rowY, { width: valueWidth, align: 'right' });
 
+  rowY += 29;
+  doc.moveTo(boxX + boxPadding, rowY - 8).lineTo(boxX + boxWidth - boxPadding, rowY - 8).stroke('#CBD3DB');
+
+  doc.font('Inter').fontSize(8.5).fillColor('#6B7280');
+  doc.text(T.vat21, boxX + boxPadding, rowY, { width: labelWidth });
+  doc.text(formatPrice(quote.vatAmount), valueX, rowY, { width: valueWidth, align: 'right' });
+
+  rowY += 14;
+  doc.text(T.totalExclVat, boxX + boxPadding, rowY, { width: labelWidth });
+  doc.text(formatPrice(quote.subtotal), valueX, rowY, { width: valueWidth, align: 'right' });
+
   if (hasTradeIn) {
-    rowY += 26;
+    rowY += 24;
+    doc.moveTo(boxX + boxPadding, rowY - 9).lineTo(boxX + boxWidth - boxPadding, rowY - 9).stroke('#CBD3DB');
     doc.font('Inter').fontSize(9).fillColor('#333');
     doc.text(T.tradeInValueLabel, boxX + boxPadding, rowY, { width: labelWidth });
     doc.text('-' + formatPrice(quote.tradeInValue), valueX, rowY, { width: valueWidth, align: 'right' });

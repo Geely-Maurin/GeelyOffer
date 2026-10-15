@@ -30,19 +30,20 @@ function PricingSummary({ pricing, tradeInValue = 0 }) {
         </div>
       )}
 
-      <div className="price-divider" />
-
-      <div className="price-row">
-        <span className="price-label">Totaalprijs excl. BTW</span>
-        <span className="price-value">{formatPrice(pricing.subtotal)}</span>
-      </div>
-      <div className="price-row">
-        <span className="price-label">BTW (21%)</span>
-        <span className="price-value">{formatPrice(pricing.vat)}</span>
-      </div>
+      {/* Same flow as the bestelbon and the offer PDF: everything above is incl. BTW, so
+          the incl.-BTW total follows straight after the discount, and only then the BTW
+          in it and what's left excl. BTW, as a smaller breakdown. */}
       <div className="price-row total">
         <span>Totaalprijs incl. BTW</span>
         <span>{formatPrice(pricing.total)}</span>
+      </div>
+      <div className="price-row price-row--breakdown">
+        <span className="price-label">BTW (21%)</span>
+        <span className="price-value">{formatPrice(pricing.vat)}</span>
+      </div>
+      <div className="price-row price-row--breakdown">
+        <span className="price-label">Totaalprijs excl. BTW</span>
+        <span className="price-value">{formatPrice(pricing.subtotal)}</span>
       </div>
       {tradeInValue > 0 && (
         <>
