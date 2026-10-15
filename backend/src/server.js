@@ -1,7 +1,9 @@
+// Must be the first import: ES modules evaluate imports before this file's body, and
+// database/init.js reads DATABASE_PATH at import time.
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
@@ -23,8 +25,6 @@ import vatLookupRouter from './routes/vatLookup.js';
 import gdprRouter from './routes/gdpr.js';
 import quoteAcceptanceRouter from './routes/quoteAcceptance.js';
 import inventoryRouter from './routes/inventory.js';
-
-dotenv.config();
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const isProduction = process.env.NODE_ENV === 'production';
