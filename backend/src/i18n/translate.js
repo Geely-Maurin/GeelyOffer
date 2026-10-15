@@ -88,6 +88,7 @@ export const DELIVERY_PACK_CONTENTS = {
     battery: '100% batterij',
     fullTank: 'Volle tank',
     mats: 'Rubber matten voor en achter',
+    trunkMat: 'Rubber koffermat',
   },
   fr: {
     prefix: 'Inclus :',
@@ -95,13 +96,14 @@ export const DELIVERY_PACK_CONTENTS = {
     battery: 'Batterie chargée à 100 %',
     fullTank: 'Plein de carburant',
     mats: 'Tapis en caoutchouc avant et arrière',
+    trunkMat: 'Tapis de coffre en caoutchouc',
   },
 };
 
 // Spaces inside an item are non-breaking, so a wrapped line only ever breaks between items.
 export function deliveryPackContents(vehicle, lang) {
   const t = DELIVERY_PACK_CONTENTS[resolveLang(lang)];
-  const items = [t.legalKit, t.battery, ...(vehicle?.fuel === PHEV_FUEL ? [t.fullTank] : []), t.mats];
+  const items = [t.legalKit, t.battery, ...(vehicle?.fuel === PHEV_FUEL ? [t.fullTank] : []), t.mats, t.trunkMat];
   return `${t.prefix} ${items.map((item) => item.replace(/ /g, ' ')).join(' · ')}`;
 }
 
