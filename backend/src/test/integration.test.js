@@ -331,9 +331,6 @@ describe('server integration', () => {
     const paint = defaultQuote.items.filter((i) => i.name.startsWith('Metallic:') || i.name.startsWith('Standaardkleur:'));
     assert.deepEqual(paint.map((i) => [i.name, i.price]), [['Metallic: Snowy White', 0]]);
 
-    // The shared standard white is not accepted on an E5.
-    assert.equal((await createQuote('geely-e5-pro', [{ id: 'paint-standard-white' }])).status, 400);
-
     // Moss Green: rejected on PRO, accepted on PRO+.
     assert.equal((await createQuote('geely-e5-pro', [{ id: 'e5-paint-moss-green' }])).status, 400);
     const mossRes = await createQuote('geely-e5-pro-plus', [{ id: 'e5-paint-moss-green' }]);

@@ -1,12 +1,12 @@
 import React from 'react'
 import { formatPrice } from '../utils/api'
 import { SINGLE_SELECT_CATEGORIES } from '../utils/constants'
-import { accessoryAppliesToVehicle } from '../utils/accessoryScope'
+import { accessoriesForVehicle } from '../utils/accessoryScope'
 
 function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccessory, vehicle }) {
   // Show only the options scoped to this exact trim — by whole-model name or by trim id
   // (see accessoryAppliesToVehicle / AdminAccessories.jsx's "Beschikbaar voor").
-  const applicableAccessories = accessories.filter(acc => accessoryAppliesToVehicle(acc, vehicle))
+  const applicableAccessories = accessoriesForVehicle(accessories, vehicle)
   // Collapse accessories that share a name and both apply here (e.g. a mandatory "Delivery
   // Pack" that has drifted to also being "all models" alongside the model-specific one),
   // preferring the more specifically scoped row — otherwise it renders as two identical

@@ -3,9 +3,9 @@ import { api, formatPrice, exclVat, formatDate } from '../utils/api'
 import {
   DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS,
   DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE, DISCOUNT_APPROVAL_THRESHOLD_FIXED,
-  SINGLE_SELECT_CATEGORIES, standardPaintIdFor,
+  SINGLE_SELECT_CATEGORIES,
 } from '../utils/constants'
-import { accessoryAppliesToVehicle } from '../utils/accessoryScope'
+import { accessoryAppliesToVehicle, standardPaintFor } from '../utils/accessoryScope'
 import { missingCustomerFields } from '../utils/customerInfo'
 import { useAuth } from '../context/AuthContext'
 import VehicleSelector from './VehicleSelector'
@@ -15,7 +15,7 @@ import PricingSummary from './PricingSummary'
 import CustomerForm from './CustomerForm'
 import TradeInForm from './TradeInForm'
 import MissingCustomerInfoModal from './MissingCustomerInfoModal'
-import { VEHICLE_IMAGES, VEHICLE_COLOR_FRONT_IMAGES, VEHICLE_STANDARD_COLOR_IMAGES, STANDARD_PAINT_NAME, VEHICLE_REAR_IMAGES, VEHICLE_INTERIOR_IMAGES, VEHICLE_UPHOLSTERY_IMAGES } from '../utils/vehicleImages'
+import { VEHICLE_IMAGES, colorFrontImageFor, VEHICLE_STANDARD_COLOR_IMAGES, STANDARD_PAINT_NAME, VEHICLE_REAR_IMAGES, VEHICLE_INTERIOR_IMAGES, VEHICLE_UPHOLSTERY_IMAGES } from '../utils/vehicleImages'
 
 function needsApprovalWarning(discountType, discountValue, role) {
   if (['admin', 'sales_manager'].includes(role)) return false
@@ -230,9 +230,7 @@ function QuoteBuilder({ onQuoteCreated }) {
   useEffect(() => {
     if (!selectedModel || accessories.length === 0) return
     const previewVehicle = selectedVariant || { id: null, name: selectedModel }
-    const standardColor = accessories.find(
-      (a) => a.id === standardPaintIdFor(previewVehicle.name) && accessoryAppliesToVehicle(a, previewVehicle)
-    )
+    const standardColor = standardPaintFor(accessories, previewVehicle)
     if (!standardColor) return
     setSelectedAccessories((prev) =>
       prev.some((a) => a.category === 'exterior') ? prev : [...prev, standardColor]
@@ -384,7 +382,7 @@ function QuoteBuilder({ onQuoteCreated }) {
   // is fixed per model rather than per color — see VEHICLE_REAR_IMAGES in
   // utils/vehicleImages.js for why.
   const selectedColorAccessory = selectedAccessories.find((acc) => acc.category === 'exterior')
-  const previewFrontImage = (selectedColorAccessory && VEHICLE_COLOR_FRONT_IMAGES[selectedColorAccessory.name])
+  const previewFrontImage = (selectedColorAccessory && colorFrontImageFor(selectedColorAccessory.name))
     || (selectedColorAccessory?.name === STANDARD_PAINT_NAME && selectedVariant && VEHICLE_STANDARD_COLOR_IMAGES[selectedVariant.name])
     || (selectedVariant && VEHICLE_IMAGES[selectedVariant.name])
   const previewRearImage = selectedVariant && VEHICLE_REAR_IMAGES[selectedVariant.name]

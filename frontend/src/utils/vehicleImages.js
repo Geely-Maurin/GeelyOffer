@@ -65,6 +65,19 @@ export const VEHICLE_COLOR_FRONT_IMAGES = {
   'Metallic: Star Silver': e2StarSilverSide,
 }
 
+// Bare colour name for matching photos: "Metallic: Frost Grey", "Frost grey" and
+// "frost  grey" all become "frost grey", so a colour renamed in Beheer → Opties (prefix
+// dropped, different capitals) still finds its photo. Mirrors colorKey in
+// backend/src/routes/pdf.js.
+const colorKey = (name) => String(name || '').replace(/^[^:]*:/, '').trim().replace(/\s+/g, ' ').toLowerCase()
+const COLOR_FRONT_IMAGES_BY_KEY = Object.fromEntries(
+  Object.entries(VEHICLE_COLOR_FRONT_IMAGES).map(([name, image]) => [colorKey(name), image])
+)
+
+export function colorFrontImageFor(colorName) {
+  return VEHICLE_COLOR_FRONT_IMAGES[colorName] || COLOR_FRONT_IMAGES_BY_KEY[colorKey(colorName)]
+}
+
 // Photo for the free "Standaardkleur: Wit" colour, per model. That colour is one shared row
 // for every model, so it can't be keyed by name in VEHICLE_COLOR_FRONT_IMAGES above. The
 // E2's is Moon White and the E5's Snowy White; the Starray keeps showing its default photo.

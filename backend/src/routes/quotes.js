@@ -131,21 +131,9 @@ const SINGLE_SELECT_CATEGORIES = ['exterior', 'interior'];
 // name match on the submitted line is what makes the delivery-pack duplication bug
 // impossible even if something upstream misbehaves. `accessory` here is a raw DB row
 // (vehicleModels / vehicleTrims are JSON strings); `vehicle` is `{ id, name }`.
-const STANDARD_PAINT_ACCESSORY_ID = 'paint-standard-white';
-
-// Models whose free standard colour is one of their own paint rows instead of the shared
-// "Standaardkleur: Wit" — the E5's is Snowy White (€0, prijslijst juli 2026). For these
-// models the shared row doesn't apply, and applyDefaultPaintColor picks the model's own
-// row instead. Mirrors MODEL_STANDARD_PAINT_IDS in frontend/src/utils/constants.js.
-const MODEL_STANDARD_PAINT_IDS = {
-  'Geely E5': 'e5-paint-moss',
-};
-
 // Mirrors accessoryAppliesToVehicle() in frontend/src/utils/accessoryScope.js.
 function accessoryAppliesToVehicle(accessory, vehicle) {
   if (!vehicle) return false;
-  // A model with its own standard colour doesn't get the shared "Standaardkleur: Wit".
-  if (accessory.id === STANDARD_PAINT_ACCESSORY_ID && MODEL_STANDARD_PAINT_IDS[vehicle.name]) return false;
   const models = JSON.parse(accessory.vehicleModels || '[]');
   const trims = JSON.parse(accessory.vehicleTrims || '[]');
   if (models.length === 0 && trims.length === 0) return true;
@@ -250,15 +238,25 @@ function mergeMandatoryAccessories(resolvedAccessories, mandatoryAccessories) {
 // that also carries a paid colour. So it's applied here as a fallback only — never when
 // an exterior colour is already present. Mirrors QuoteBuilder/QuoteEditor, which
 // pre-select it in the live preview.
+const STANDARD_PAINT_ACCESSORY_ID = 'paint-standard-white';
+
+// Models whose free standard colour is one of their own paint rows instead of the shared
+// "Standaardkleur: Wit" — the E5's is Snowy White (€0, prijslijst juli 2026). The fallback
+// below picks that row when it's active, else the shared white. Mirrors
+// MODEL_STANDARD_PAINT_IDS in frontend/src/utils/constants.js.
+const MODEL_STANDARD_PAINT_IDS = {
+  'Geely E5': 'e5-paint-moss',
+};
 
 async function applyDefaultPaintColor(resolvedAccessories, vehicle) {
   if (resolvedAccessories.some((a) => a.category === 'exterior')) return resolvedAccessories;
-  const paintId = (vehicle && MODEL_STANDARD_PAINT_IDS[vehicle.name]) || STANDARD_PAINT_ACCESSORY_ID;
-  const row = await getAsync('SELECT * FROM accessories WHERE id = ? AND active = 1', [paintId]);
-  if (!row) return resolvedAccessories;
-  if (vehicle && !accessoryAppliesToVehicle(row, vehicle)) {
-    return resolvedAccessories;
+  const candidates = [vehicle && MODEL_STANDARD_PAINT_IDS[vehicle.name], STANDARD_PAINT_ACCESSORY_ID].filter(Boolean);
+  let row = null;
+  for (const id of candidates) {
+    const found = await getAsync('SELECT * FROM accessories WHERE id = ? AND active = 1', [id]);
+    if (found && (!vehicle || accessoryAppliesToVehicle(found, vehicle))) { row = found; break; }
   }
+  if (!row) return resolvedAccessories;
   return [
     ...resolvedAccessories,
     { id: row.id, name: row.name, price: row.price, quantity: 1, category: row.category, discountable: !!row.discountable },

@@ -96,10 +96,20 @@ export function registerFonts(doc) {
 // whose name is a known paint color), falling back to the model's default photo for a
 // color Geely hasn't been photographed in yet, or none picked. Undefined for a model
 // without any photo.
+// Bare colour name for matching photos: "Metallic: Frost Grey", "Frost grey" and
+// "frost  grey" all become "frost grey", so a colour renamed in Beheer → Opties (prefix
+// dropped, different capitals) still finds its photo. Mirrors colorKey in
+// frontend/src/utils/vehicleImages.js.
+const colorKey = (name) => String(name || '').replace(/^[^:]*:/, '').trim().replace(/\s+/g, ' ').toLowerCase();
+const COLOR_IMAGES_BY_KEY = Object.fromEntries(
+  Object.entries(VEHICLE_COLOR_IMAGES).map(([name, image]) => [colorKey(name), image])
+);
+const colorImageFor = (name) => VEHICLE_COLOR_IMAGES[name] || COLOR_IMAGES_BY_KEY[colorKey(name)];
+
 export function resolveExteriorImagePath(vehicle, items) {
-  const selectedColorItem = items.find((item) => VEHICLE_COLOR_IMAGES[item.itemName]);
+  const selectedColorItem = items.find((item) => colorImageFor(item.itemName));
   const hasStandardPaint = items.some((item) => item.itemName === STANDARD_PAINT_NAME);
-  return (selectedColorItem && VEHICLE_COLOR_IMAGES[selectedColorItem.itemName])
+  return (selectedColorItem && colorImageFor(selectedColorItem.itemName))
     || (hasStandardPaint && VEHICLE_STANDARD_COLOR_IMAGES[vehicle.name])
     || VEHICLE_IMAGES[vehicle.name];
 }

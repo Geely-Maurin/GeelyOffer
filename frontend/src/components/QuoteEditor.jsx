@@ -4,9 +4,9 @@ import {
   QUOTE_STATUSES, STATUS_LABELS, DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS,
   DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE, DISCOUNT_APPROVAL_THRESHOLD_FIXED,
   DISCOUNT_APPROVAL_STATUS_LABELS, DISCOUNT_APPROVAL_BADGE_CLASS,
-  SINGLE_SELECT_CATEGORIES, standardPaintIdFor,
+  SINGLE_SELECT_CATEGORIES,
 } from '../utils/constants'
-import { accessoryAppliesToVehicle } from '../utils/accessoryScope'
+import { accessoryAppliesToVehicle, accessoriesForVehicle, standardPaintFor } from '../utils/accessoryScope'
 import { missingCustomerFields } from '../utils/customerInfo'
 import { useAuth } from '../context/AuthContext'
 import CustomerForm from './CustomerForm'
@@ -83,8 +83,7 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
         // alongside the model-specific one), keep only one per name — preferring the more
         // specific row — so the quote doesn't load, show and re-save that line twice.
         // Mirrors resolveMandatoryAccessories in routes/quotes.js.
-        const matched = catalog.filter((acc) =>
-          accessoryAppliesToVehicle(acc, vehicleData) &&
+        const matched = accessoriesForVehicle(catalog, vehicleData).filter((acc) =>
           quote.items?.some((item) => item.itemName === acc.name)
         )
         const scopeCount = (a) => (a.vehicleModels?.length || 0) + (a.vehicleTrims?.length || 0)
@@ -179,9 +178,7 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
   // handler. The backend applies the same fallback on save (applyDefaultPaintColor).
   useEffect(() => {
     if (!vehicle || accessoriesCatalog.length === 0) return
-    const standardColor = accessoriesCatalog.find(
-      (a) => a.id === standardPaintIdFor(vehicle.name) && accessoryAppliesToVehicle(a, vehicle)
-    )
+    const standardColor = standardPaintFor(accessoriesCatalog, vehicle)
     if (!standardColor) return
     setSelectedAccessories((prev) =>
       prev.some((a) => a.category === 'exterior') ? prev : [...prev, standardColor]

@@ -418,8 +418,9 @@ function seedAccessoriesIfEmpty(database) {
     }
     if (row.count > 0) return;
 
+    // OR IGNORE: fixAccessoryColorDataIfStale may already have put Snowy White in.
     const insertAccessory = database.prepare(
-      `INSERT INTO accessories (id, name, price, category, vehicleModels, active, colorHex)
+      `INSERT OR IGNORE INTO accessories (id, name, price, category, vehicleModels, active, colorHex)
        VALUES (?, ?, ?, ?, ?, 1, ?)`
     );
     STANDARD_ACCESSORIES.forEach((acc) => {
@@ -440,8 +441,16 @@ function fixAccessoryColorDataIfStale(database) {
   database.run(
     `UPDATE accessories SET name = 'Metallic: Snowy White' WHERE id = 'e5-paint-moss' AND name = 'Metallic: Moss Green'`
   );
-  // Snowy White is the E5's free standard colour, but was seeded at €650. Only the
-  // original seeded price is corrected, so any other price an admin sets is kept.
+  // Snowy White is the E5's free standard colour, so a deleted row is put back (a row an
+  // admin switched off stays off; INSERT OR IGNORE leaves existing rows alone).
+  const snowyWhite = STANDARD_ACCESSORIES.find((acc) => acc.id === 'e5-paint-moss');
+  database.run(
+    `INSERT OR IGNORE INTO accessories (id, name, price, category, vehicleModels, active, colorHex)
+     VALUES (?, ?, ?, ?, ?, 1, ?)`,
+    [snowyWhite.id, snowyWhite.name, snowyWhite.price, snowyWhite.category, JSON.stringify(snowyWhite.vehicleModels), snowyWhite.colorHex]
+  );
+  // It was seeded at €650 before. Only that original price is corrected, so any other
+  // price an admin sets is kept.
   database.run(
     `UPDATE accessories SET price = 0 WHERE id = 'e5-paint-moss' AND name = 'Metallic: Snowy White' AND price = 650`
   );
