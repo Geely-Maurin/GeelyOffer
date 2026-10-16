@@ -127,10 +127,11 @@ describe('server integration', () => {
     const accessoriesRes = await fetch(`${BASE_URL}/api/accessories`, { headers: { Cookie: cookie } });
     const accessories = await accessoriesRes.json();
     // 12 from STANDARD_ACCESSORIES (paint colors + upholstery for E5/Starray) + 6 from
-    // GEELY_E2_ACCESSORIES (5 paints + 1 upholstery) + 1 mandatory delivery pack (one row)
+    // GEELY_E2_ACCESSORIES (5 paints + 1 upholstery) + 1 from GEELY_E5_LATER_ACCESSORIES
+    // (Moss Green) + 1 mandatory delivery pack (one row)
     // + 1 towing hook + 2 charging cables + 1 free standard white paint color (all models)
     // — the non-STANDARD_ACCESSORIES rows are seeded on every boot, see database/init.js.
-    assert.equal(accessories.length, 23);
+    assert.equal(accessories.length, 24);
   });
 
   test('a Geely E2 quote gets the mandatory Delivery Pack, and the charging cables apply to the E2', async () => {
@@ -307,6 +308,42 @@ describe('server integration', () => {
 
     await fetch(`${BASE_URL}/api/quotes/${created.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
     await fetch(`${BASE_URL}/api/accessories/${trimOption.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
+  });
+
+  test('the E5 defaults to its free Snowy White, and Moss Green is only offered on PRO+ / MAX+', async () => {
+    const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+    });
+    const cookie = extractCookie(loginRes);
+    const customer = { customerName: 'E5 Colour Test', customerEmail: 'x@y.be', customerPhone: '0470', customerStreet: 'S1', customerPostalCode: '8800', customerCity: 'R' };
+    const createQuote = (vehicleId, accessories) => fetch(`${BASE_URL}/api/quotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ ...customer, selectedVehicleId: vehicleId, configuration: {}, accessories }),
+    });
+
+    // No colour chosen: the E5 gets Snowy White at €0, never the shared "Standaardkleur: Wit".
+    const defaultRes = await createQuote('geely-e5-pro', []);
+    assert.equal(defaultRes.status, 201);
+    const defaultQuote = await defaultRes.json();
+    const paint = defaultQuote.items.filter((i) => i.name.startsWith('Metallic:') || i.name.startsWith('Standaardkleur:'));
+    assert.deepEqual(paint.map((i) => [i.name, i.price]), [['Metallic: Snowy White', 0]]);
+
+    // The shared standard white is not accepted on an E5.
+    assert.equal((await createQuote('geely-e5-pro', [{ id: 'paint-standard-white' }])).status, 400);
+
+    // Moss Green: rejected on PRO, accepted on PRO+.
+    assert.equal((await createQuote('geely-e5-pro', [{ id: 'e5-paint-moss-green' }])).status, 400);
+    const mossRes = await createQuote('geely-e5-pro-plus', [{ id: 'e5-paint-moss-green' }]);
+    assert.equal(mossRes.status, 201);
+    const mossQuote = await mossRes.json();
+    assert.ok(mossQuote.items.some((i) => i.name === 'Metallic: Moss Green' && i.price === 650));
+
+    for (const q of [defaultQuote, mossQuote]) {
+      await fetch(`${BASE_URL}/api/quotes/${q.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
+    }
   });
 
   test('a showroom offer carries no customer or offer number and is blocked from customer flows', async () => {

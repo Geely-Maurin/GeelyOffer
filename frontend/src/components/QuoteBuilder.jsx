@@ -3,7 +3,7 @@ import { api, formatPrice, exclVat, formatDate } from '../utils/api'
 import {
   DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS,
   DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE, DISCOUNT_APPROVAL_THRESHOLD_FIXED,
-  SINGLE_SELECT_CATEGORIES, STANDARD_PAINT_ACCESSORY_ID,
+  SINGLE_SELECT_CATEGORIES, standardPaintIdFor,
 } from '../utils/constants'
 import { accessoryAppliesToVehicle } from '../utils/accessoryScope'
 import { missingCustomerFields } from '../utils/customerInfo'
@@ -231,7 +231,7 @@ function QuoteBuilder({ onQuoteCreated }) {
     if (!selectedModel || accessories.length === 0) return
     const previewVehicle = selectedVariant || { id: null, name: selectedModel }
     const standardColor = accessories.find(
-      (a) => a.id === STANDARD_PAINT_ACCESSORY_ID && accessoryAppliesToVehicle(a, previewVehicle)
+      (a) => a.id === standardPaintIdFor(previewVehicle.name) && accessoryAppliesToVehicle(a, previewVehicle)
     )
     if (!standardColor) return
     setSelectedAccessories((prev) =>

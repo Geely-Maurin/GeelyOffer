@@ -32,6 +32,7 @@ const VEHICLE_COLOR_IMAGES = {
   'Metallic: Moonlight Silver': path.join(__dirname, '../assets/vehicles/colors/e5-moonlight-silver-front.jpg'),
   'Metallic: Snowy White': path.join(__dirname, '../assets/vehicles/colors/e5-snowy-white-front.jpg'),
   'Metallic: Turquoise Green': path.join(__dirname, '../assets/vehicles/colors/e5-turquoise-green-front.jpg'),
+  'Metallic: Moss Green': path.join(__dirname, '../assets/vehicles/colors/e5-moss-green-front.jpg'),
   'Metallic: Cloudveil Silver': path.join(__dirname, '../assets/vehicles/colors/starray-cloudveil-silver-front.jpg'),
   'Metallic: Jungle Green': path.join(__dirname, '../assets/vehicles/colors/starray-jungle-green-front.jpg'),
   'Metallic: Glacier Blue': path.join(__dirname, '../assets/vehicles/colors/starray-glacier-blue-front.jpg'),
@@ -45,9 +46,11 @@ const VEHICLE_COLOR_IMAGES = {
 };
 
 // Photo for the free "Standaardkleur: Wit" colour, per model — it's one shared row for
-// every model, so it can't be keyed by name above. Only the E2 has one (Moon White).
+// every model, so it can't be keyed by name above. The E2's is Moon White, the E5's is
+// Snowy White (its free standard colour).
 const STANDARD_PAINT_NAME = 'Standaardkleur: Wit';
 const VEHICLE_STANDARD_COLOR_IMAGES = {
+  'Geely E5': path.join(__dirname, '../assets/vehicles/colors/e5-snowy-white-front.jpg'),
   'Geely E2': path.join(__dirname, '../assets/vehicles/colors/e2-moon-white-side.jpg'),
 };
 

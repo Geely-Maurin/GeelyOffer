@@ -4,7 +4,7 @@ import {
   QUOTE_STATUSES, STATUS_LABELS, DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS,
   DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE, DISCOUNT_APPROVAL_THRESHOLD_FIXED,
   DISCOUNT_APPROVAL_STATUS_LABELS, DISCOUNT_APPROVAL_BADGE_CLASS,
-  SINGLE_SELECT_CATEGORIES, STANDARD_PAINT_ACCESSORY_ID,
+  SINGLE_SELECT_CATEGORIES, standardPaintIdFor,
 } from '../utils/constants'
 import { accessoryAppliesToVehicle } from '../utils/accessoryScope'
 import { missingCustomerFields } from '../utils/customerInfo'
@@ -180,7 +180,7 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
   useEffect(() => {
     if (!vehicle || accessoriesCatalog.length === 0) return
     const standardColor = accessoriesCatalog.find(
-      (a) => a.id === STANDARD_PAINT_ACCESSORY_ID && accessoryAppliesToVehicle(a, vehicle)
+      (a) => a.id === standardPaintIdFor(vehicle.name) && accessoryAppliesToVehicle(a, vehicle)
     )
     if (!standardColor) return
     setSelectedAccessories((prev) =>

@@ -7,6 +7,7 @@ import e5CarbonBlackFront from '../assets/vehicles/colors/e5-carbon-black-front.
 import e5MoonlightSilverFront from '../assets/vehicles/colors/e5-moonlight-silver-front.jpg'
 import e5SnowyWhiteFront from '../assets/vehicles/colors/e5-snowy-white-front.jpg'
 import e5TurquoiseGreenFront from '../assets/vehicles/colors/e5-turquoise-green-front.jpg'
+import e5MossGreenFront from '../assets/vehicles/colors/e5-moss-green-front.jpg'
 import e5Rear from '../assets/vehicles/colors/e5-rear.jpg'
 
 import starrayCloudveilSilverFront from '../assets/vehicles/colors/starray-cloudveil-silver-front.jpg'
@@ -51,6 +52,7 @@ export const VEHICLE_COLOR_FRONT_IMAGES = {
   'Metallic: Moonlight Silver': e5MoonlightSilverFront,
   'Metallic: Snowy White': e5SnowyWhiteFront,
   'Metallic: Turquoise Green': e5TurquoiseGreenFront,
+  'Metallic: Moss Green': e5MossGreenFront,
   'Metallic: Cloudveil Silver': starrayCloudveilSilverFront,
   'Metallic: Jungle Green': starrayJungleGreenFront,
   'Metallic: Glacier Blue': starrayGlacierBlueFront,
@@ -64,10 +66,11 @@ export const VEHICLE_COLOR_FRONT_IMAGES = {
 }
 
 // Photo for the free "Standaardkleur: Wit" colour, per model. That colour is one shared row
-// for every model, so it can't be keyed by name in VEHICLE_COLOR_FRONT_IMAGES above. Only
-// the E2 has one (Moon White); the E5 / Starray keep showing their default photo.
+// for every model, so it can't be keyed by name in VEHICLE_COLOR_FRONT_IMAGES above. The
+// E2's is Moon White and the E5's Snowy White; the Starray keeps showing its default photo.
 export const STANDARD_PAINT_NAME = 'Standaardkleur: Wit'
 export const VEHICLE_STANDARD_COLOR_IMAGES = {
+  'Geely E5': e5SnowyWhiteFront,
   'Geely E2': e2MoonWhiteSide,
 }
 

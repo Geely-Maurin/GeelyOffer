@@ -74,6 +74,19 @@ export const SINGLE_SELECT_CATEGORIES = ['exterior', 'interior']
 // (applyDefaultPaintColor in routes/quotes.js), so it stays authoritative there too.
 export const STANDARD_PAINT_ACCESSORY_ID = 'paint-standard-white'
 
+// Models whose free standard colour is one of their own paint rows instead of the shared
+// "Standaardkleur: Wit" — the E5's is Snowy White (€0, prijslijst juli 2026). For these
+// models the shared row is hidden (accessoryAppliesToVehicle) so the picker never shows
+// two free whites, and the default-colour fallback picks the model's own row. Mirrors
+// MODEL_STANDARD_PAINT_IDS in backend/src/routes/quotes.js.
+export const MODEL_STANDARD_PAINT_IDS = {
+  'Geely E5': 'e5-paint-moss',
+}
+
+export function standardPaintIdFor(vehicleName) {
+  return MODEL_STANDARD_PAINT_IDS[vehicleName] || STANDARD_PAINT_ACCESSORY_ID
+}
+
 // Language the customer-facing PDF and e-mail are generated in — see
 // backend/src/i18n/translate.js. The app UI itself stays Dutch regardless of this choice.
 export const QUOTE_LANGUAGES = ['nl', 'fr']

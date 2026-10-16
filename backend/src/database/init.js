@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { STANDARD_ACCESSORIES, GEELY_E2_ACCESSORIES } from '../data/accessoriesSeed.js';
+import { STANDARD_ACCESSORIES, GEELY_E2_ACCESSORIES, GEELY_E5_LATER_ACCESSORIES } from '../data/accessoriesSeed.js';
 import { calculatePricing } from '../utils/pricing.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -352,7 +352,7 @@ function seedStandardPaintColorIfMissing(database) {
 // like every other *IfMissing seeder here, a row an admin deletes comes back on next boot
 // (deactivate it in Beheer → Opties instead).
 function seedGeelyE2AccessoriesIfMissing(database) {
-  GEELY_E2_ACCESSORIES.forEach((acc) => {
+  [...GEELY_E2_ACCESSORIES, ...GEELY_E5_LATER_ACCESSORIES].forEach((acc) => {
     database.get('SELECT id FROM accessories WHERE id = ?', [acc.id], (err, row) => {
       if (err) {
         console.error(`Error checking for ${acc.id} seed row:`, err.message);
@@ -369,7 +369,7 @@ function seedGeelyE2AccessoriesIfMissing(database) {
             console.error(`Failed to seed ${acc.id}:`, insertErr.message);
             return;
           }
-          console.log(`✓ Added ${acc.name} (Geely E2)`);
+          console.log(`✓ Added ${acc.name}`);
         }
       );
     });
@@ -439,6 +439,11 @@ function seedAccessoriesIfEmpty(database) {
 function fixAccessoryColorDataIfStale(database) {
   database.run(
     `UPDATE accessories SET name = 'Metallic: Snowy White' WHERE id = 'e5-paint-moss' AND name = 'Metallic: Moss Green'`
+  );
+  // Snowy White is the E5's free standard colour, but was seeded at €650. Only the
+  // original seeded price is corrected, so any other price an admin sets is kept.
+  database.run(
+    `UPDATE accessories SET price = 0 WHERE id = 'e5-paint-moss' AND name = 'Metallic: Snowy White' AND price = 650`
   );
   STANDARD_ACCESSORIES.forEach((acc) => {
     if (!acc.colorHex) return;

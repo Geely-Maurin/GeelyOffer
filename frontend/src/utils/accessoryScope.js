@@ -1,3 +1,5 @@
+import { STANDARD_PAINT_ACCESSORY_ID, MODEL_STANDARD_PAINT_IDS } from './constants'
+
 // An accessory is scoped to a vehicle (trim) in two independent ways: by whole-model name
 // (`vehicleModels`) and by exact trim id (`vehicleTrims`). It applies to a vehicle when it
 // has neither list set (universal — "Alle modellen"), OR the vehicle's model name is in
@@ -12,6 +14,8 @@
 // sync.
 export function accessoryAppliesToVehicle(accessory, vehicle) {
   if (!vehicle) return false
+  // A model with its own standard colour doesn't get the shared "Standaardkleur: Wit".
+  if (accessory.id === STANDARD_PAINT_ACCESSORY_ID && MODEL_STANDARD_PAINT_IDS[vehicle.name]) return false
   const models = accessory.vehicleModels || []
   const trims = accessory.vehicleTrims || []
   if (models.length === 0 && trims.length === 0) return true

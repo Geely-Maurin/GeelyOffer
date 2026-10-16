@@ -9,14 +9,16 @@
 // give a customer a fair idea of the color, while pixel-perfect matching would need
 // the actual paint sample.
 export const STANDARD_ACCESSORIES = [
-  // Geely E5 - Paint colors (verified against Geely's official 5-color E5/EX5 lineup:
-  // Carbon Black, Frost Grey, Moonlight Silver, Snowy White, Turquoise Green — "Moss
-  // Green" was not a real Geely color and has been corrected to Snowy White below)
+  // Geely E5 - Paint colors (verified against Geely's official E5/EX5 lineup: Carbon
+  // Black, Frost Grey, Moonlight Silver, Snowy White, Turquoise Green). The row id
+  // 'e5-paint-moss' is Snowy White for historical reasons; the real Moss Green (PRO+ /
+  // MAX+ only) is in GEELY_E5_LATER_ACCESSORIES below. Snowy White is the E5's standard
+  // colour (€0 on every trim, prijslijst juli 2026); the others are €650.
   { id: 'e5-paint-turquoise', name: 'Metallic: Turquoise Green', price: 650, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#5E9284' },
   { id: 'e5-paint-black', name: 'Metallic: Carbon Black', price: 650, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#1B1B1D' },
   { id: 'e5-paint-grey', name: 'Metallic: Frost Grey', price: 650, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#9CA3A8' },
   { id: 'e5-paint-silver', name: 'Metallic: Moonlight Silver', price: 650, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#CDD0D2' },
-  { id: 'e5-paint-moss', name: 'Metallic: Snowy White', price: 650, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#F5F5F2' },
+  { id: 'e5-paint-moss', name: 'Metallic: Snowy White', price: 0, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#F5F5F2' },
   // Geely E5 - Upholstery
   { id: 'e5-upholstery-ivory', name: 'Bekleding: Ivory White TEP-leder', price: 500, category: 'interior', vehicleModels: ['Geely E5'] },
 
@@ -51,6 +53,13 @@ export const STANDARD_ACCESSORIES = [
 // Upholstery: Horizon Grey TEP-leder is standard on every trim (no row, same as the E5 /
 // Starray standard upholstery); Skyline White TEP-leder (€500) is ULTRA-only, so it is
 // scoped by trim id rather than by model.
+// Geely E5 colours added after most databases were already seeded, inserted per id on
+// every boot the same way as the E2 rows below. Moss Green: €650 incl. BTW on PRO+ and
+// MAX+, not available on PRO (prijslijst juli 2026), so it is scoped by trim id.
+export const GEELY_E5_LATER_ACCESSORIES = [
+  { id: 'e5-paint-moss-green', name: 'Metallic: Moss Green', price: 650, category: 'exterior', vehicleModels: [], vehicleTrims: ['geely-e5-pro-plus', 'geely-e5-max-plus'], colorHex: '#2F5A3A' },
+];
+
 export const GEELY_E2_ACCESSORIES = [
   { id: 'e2-paint-nebula-beige', name: 'Standaardlak: Nebula Beige', price: 350, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#D6CFBE' },
   { id: 'e2-paint-aurora-green', name: 'Standaardlak: Aurora Green', price: 650, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#B4C9A2' },
