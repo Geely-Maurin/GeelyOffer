@@ -33,7 +33,6 @@ const LABELS = {
   standardInteriorSuffix: '(de série)',
   deliveryPack: 'Pack de livraison Geely',
   option: (n) => `Option ${n}`,
-  noOption: 'Aucune',
   pricesInclVat: 'PRIX CI-DESSUS TVA COMPRISE',
   totals: 'TOTAUX',
   totalCar: 'TOTAL VÉHICULE TVA comprise',

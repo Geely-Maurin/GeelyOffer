@@ -516,9 +516,7 @@ function drawOptionsTable(doc, flow, { quote, vehicle, classified, t, lang }) {
       ? { label: labels.interior, text: itemLabel(upholstery, lang), price: upholstery.totalPrice }
       : { label: labels.interior, text: standardUpholstery ? `${standardUpholstery} ${labels.standardInteriorSuffix}` : '', price: standardUpholstery ? 0 : null },
     deliveryPack ? { label: labels.deliveryPack, text: '', note: deliveryPackContents(vehicle, lang), price: deliveryPack.totalPrice } : null,
-    ...(options.length > 0
-      ? options.map((item, i) => ({ label: labels.option(i + 1), text: itemLabel(item, lang), price: item.totalPrice }))
-      : [{ label: labels.option(1), text: labels.noOption, price: null }]),
+    ...options.map((item, i) => ({ label: labels.option(i + 1), text: itemLabel(item, lang), price: item.totalPrice })),
   ].filter(Boolean);
 
   const barHeight = 24;

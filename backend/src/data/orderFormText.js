@@ -42,7 +42,6 @@ export const LABELS = {
   standardInteriorSuffix: '(standaard)',
   deliveryPack: 'Geely Delivery Pack',
   option: (n) => `Optie ${n}`,
-  noOption: 'Geen',
   pricesInclVat: 'PRIJZEN HIERBOVEN ZIJN INCL BTW',
   totals: 'TOTALEN',
   totalCar: 'TOTAAL WAGEN incl btw',
