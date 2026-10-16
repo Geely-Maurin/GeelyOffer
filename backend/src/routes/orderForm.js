@@ -560,6 +560,28 @@ function drawOptionsTable(doc, flow, { quote, vehicle, classified, t, lang }) {
   flow.y += 22;
 }
 
+// The rep's remarks from the quote, kept whole on one page. Each line break the rep
+// typed starts a new line here too.
+function drawNotesCard(doc, flow, { quote, t }) {
+  if (!quote.notes || !quote.notes.trim()) return;
+  const padding = 16;
+  const size = 11;
+  const leading = size * 1.4;
+  const textWidthMax = CONTENT_WIDTH - padding * 2;
+  const lines = quote.notes.trim().split(/\r?\n/)
+    .flatMap((paragraph) => (paragraph.trim() ? wrapText(doc, paragraph, textWidthMax, { size }) : ['']));
+  const height = padding + 22 + lines.length * leading + padding - 4;
+  flow.ensure(height);
+  panel(doc, PAGE_LEFT, flow.y, CONTENT_WIDTH, height, { radius: 6 });
+  kicker(doc, t.labels.notes, PAGE_LEFT + padding, flow.y + padding);
+  let y = flow.y + padding + 22;
+  lines.forEach((line) => {
+    if (line) put(doc, line, PAGE_LEFT + padding, y, { size, color: INK });
+    y += leading;
+  });
+  flow.y += height + 16;
+}
+
 function drawTotalsCard(doc, flow, { quote, t }) {
   const { labels } = t;
   const padding = 16;
@@ -894,6 +916,7 @@ function renderOrderForm(doc, { quote, vehicle, items, branch, catalog }) {
   drawCustomerCard(doc, flow, { quote, t });
   drawModelCard(doc, flow, { vehicle, items, t, lang });
   drawOptionsTable(doc, flow, { quote, vehicle, classified, t, lang });
+  drawNotesCard(doc, flow, { quote, t });
   drawTotalsCard(doc, flow, { quote, t });
   drawTradeInCard(doc, flow, { quote, t, lang });
   drawDeliveryLines(doc, flow, { t });

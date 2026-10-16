@@ -27,6 +27,7 @@ const LABELS = {
   customerVat: 'N° TVA',
   model: 'Votre modèle',
   options: 'Vos options',
+  notes: 'Remarques',
   version: 'Version',
   color: 'Couleur',
   interior: 'Intérieur',

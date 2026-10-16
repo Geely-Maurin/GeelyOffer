@@ -36,6 +36,7 @@ export const LABELS = {
   customerVat: 'BTW-NR.',
   model: 'Uw gekozen model',
   options: 'Uw gekozen opties',
+  notes: 'Opmerkingen',
   version: 'Versie',
   color: 'Kleur',
   interior: 'Interieur',

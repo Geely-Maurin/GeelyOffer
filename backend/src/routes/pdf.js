@@ -753,8 +753,8 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
   // footer placement right after this would then be computed from a yPos that no longer
   // corresponds to where the page cursor actually ended up.
   if (quote.notes) {
-    const notesLabelHeight = 12;
-    doc.fontSize(8).font('Inter');
+    const notesLabelHeight = 16;
+    doc.fontSize(11).font('Inter');
     const notesHeight = doc.heightOfString(quote.notes, { width: CONTENT_WIDTH });
     const pageBottomForNotes = doc.page.height - doc.page.margins.bottom;
     if (yPos + notesLabelHeight + notesHeight + 10 > pageBottomForNotes) {
@@ -763,9 +763,9 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
       yPos = 108;
     }
 
-    doc.fillColor('#000').fontSize(9).font('Inter-Bold').text(T.notesLabel, PAGE_LEFT, yPos);
+    doc.fillColor('#000').fontSize(12).font('Inter-Bold').text(T.notesLabel, PAGE_LEFT, yPos);
     yPos += notesLabelHeight;
-    doc.fontSize(8).font('Inter').fillColor('#333');
+    doc.fontSize(11).font('Inter').fillColor('#333');
     doc.text(quote.notes, PAGE_LEFT, yPos, { width: CONTENT_WIDTH });
     yPos += notesHeight + 10;
   }
