@@ -690,6 +690,18 @@ textarea {
   gap: 8px;
 }
 
+.custom-accessory-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px auto;
+  gap: 8px;
+}
+
+@media (max-width: 600px) {
+  .custom-accessory-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 .option-copy {
   flex: 1;
 }

@@ -77,7 +77,21 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
           if (i === -1) dedupedByName.push(acc)
           else if (scopeCount(acc) && !scopeCount(dedupedByName[i])) dedupedByName[i] = acc
         }
-        setSelectedAccessories(dedupedByName)
+        // Saved lines that match no catalog option for this trim are the salesperson's own
+        // accessories (or an option since removed from the catalog): keep them as custom
+        // lines at their saved price, so editing the quote doesn't silently drop them.
+        const customLines = (quote.items || [])
+          .filter((item) => !dedupedByName.some((acc) => acc.name === item.itemName))
+          .map((item) => ({
+            id: `custom-${item.id}`,
+            custom: true,
+            name: item.itemName,
+            price: item.unitPrice,
+            quantity: item.quantity || 1,
+            category: 'techniek',
+            discountable: !!item.discountable,
+          }))
+        setSelectedAccessories([...dedupedByName, ...customLines])
         const loadedDiscountType = quote.discountType || 'percentage'
         const loadedDiscountValue = (quote.discountType === 'fixed' ? quote.discountEuro : quote.discountPercentage) || 0
         setDiscountType(loadedDiscountType)

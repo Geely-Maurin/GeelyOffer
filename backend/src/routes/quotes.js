@@ -134,6 +134,27 @@ async function resolveAccessories(items, vehicle) {
   if (!Array.isArray(items) || items.length === 0) return [];
   const resolved = [];
   for (const item of items) {
+    // A salesperson's own accessory (not in the catalog): name and price come from the
+    // request, as entered in the quote builder. It sits in the Accessoires ('techniek')
+    // section and, like the towing hook, the discount does not apply to it unless the
+    // saved line already said so.
+    if (item && item.custom === true) {
+      const name = typeof item.name === 'string' ? item.name.trim() : '';
+      const price = Number(item.price);
+      if (!name || name.length > 120) {
+        const error = new Error('Een eigen accessoire heeft een naam nodig (max. 120 tekens)');
+        error.status = 400;
+        throw error;
+      }
+      if (!Number.isFinite(price) || price < 0 || price > 1000000) {
+        const error = new Error(`Ongeldige prijs voor eigen accessoire "${name}"`);
+        error.status = 400;
+        throw error;
+      }
+      const quantity = Number.isInteger(item.quantity) && item.quantity > 0 && item.quantity <= 100 ? item.quantity : 1;
+      resolved.push({ id: null, name, price: Math.round(price * 100) / 100, quantity, category: 'techniek', discountable: item.discountable === true });
+      continue;
+    }
     if (!item || typeof item.id !== 'string') {
       const error = new Error('Elke optie moet een geldig id hebben');
       error.status = 400;

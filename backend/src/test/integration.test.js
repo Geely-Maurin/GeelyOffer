@@ -215,6 +215,49 @@ describe('server integration', () => {
     assert.equal(deleteRes.status, 204);
   });
 
+  test('a salesperson can add their own accessory with its own price', async () => {
+    const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+    });
+    const cookie = extractCookie(loginRes);
+
+    const quoteRes = await fetch(`${BASE_URL}/api/quotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        customerName: 'Eigen Accessoire Test',
+        selectedVehicleId: 'geely-e2-pro',
+        configuration: { vehicleName: 'Geely E2', vehicleModel: 'PRO' },
+        accessories: [{ id: 'custom-1', custom: true, name: 'Dakdragers', price: 349.5 }],
+        discountType: 'fixed',
+        discountValue: 1000,
+      }),
+    });
+    assert.equal(quoteRes.status, 201);
+    const quote = await quoteRes.json();
+    const line = quote.items.find((i) => i.name === 'Dakdragers');
+    assert.ok(line, 'the custom accessory is saved as a line on the quote');
+    assert.equal(line.price, 349.5);
+    // The discount comes off the car, not off the salesperson's own accessory.
+    assert.equal(quote.totalPrice, 21490 + 349.5 - 1000);
+
+    const badRes = await fetch(`${BASE_URL}/api/quotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        customerName: 'Eigen Accessoire Fout',
+        selectedVehicleId: 'geely-e2-pro',
+        configuration: { vehicleName: 'Geely E2', vehicleModel: 'PRO' },
+        accessories: [{ id: 'custom-2', custom: true, name: '', price: 10 }],
+      }),
+    });
+    assert.equal(badRes.status, 400, 'a custom accessory without a name is refused');
+
+    await fetch(`${BASE_URL}/api/quotes/${quote.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
+  });
+
   test('an option scoped to specific trims is only accepted on those trims', async () => {
     const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',

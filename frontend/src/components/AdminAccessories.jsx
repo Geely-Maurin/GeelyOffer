@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext'
 const CATEGORY_SECTIONS = [
   { key: 'exterior', label: 'Exterieur (lakkleuren)' },
   { key: 'interior', label: 'Interieur (bekleding)' },
-  { key: 'techniek', label: 'Techniek & accessoires' },
+  { key: 'techniek', label: 'Accessoires' },
   { key: 'verplicht', label: 'Standaard' },
 ]
 const OTHER_SECTION = { key: '__other__', label: 'Overig' }

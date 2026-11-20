@@ -1,7 +1,63 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { formatPrice } from '../utils/api'
 import { SINGLE_SELECT_CATEGORIES } from '../utils/constants'
 import { accessoriesForVehicle } from '../utils/accessoryScope'
+
+// The catalog category the "Accessoires" section is built from (towing hook, charging
+// cables). A salesperson's own accessories are added to this section too.
+const ACCESSORY_CATEGORY = 'techniek'
+
+const CATEGORY_TITLES = { verplicht: 'Standaard', [ACCESSORY_CATEGORY]: 'Accessoires' }
+const categoryTitle = (category) => CATEGORY_TITLES[category] || category.charAt(0).toUpperCase() + category.slice(1)
+
+// A salesperson's own accessory: a free-text name and price (incl. BTW). It is not in the
+// catalog, so it is sent to the server with custom: true and priced as entered — like the
+// towing hook it is a "true accessory" that the discount does not apply to.
+export function makeCustomAccessory(name, price) {
+  return {
+    id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    custom: true,
+    name,
+    price,
+    quantity: 1,
+    category: ACCESSORY_CATEGORY,
+    discountable: false,
+  }
+}
+
+function CustomAccessoryForm({ onAdd }) {
+  const [name, setName] = useState('')
+  const [price, setPrice] = useState('')
+  const parsedPrice = Number(String(price).replace(',', '.'))
+  const valid = name.trim() !== '' && price !== '' && Number.isFinite(parsedPrice) && parsedPrice >= 0
+  const add = () => {
+    if (!valid) return
+    onAdd(makeCustomAccessory(name.trim(), Math.round(parsedPrice * 100) / 100))
+    setName('')
+    setPrice('')
+  }
+  return (
+    <div className="custom-accessory-form">
+      <input
+        type="text"
+        placeholder="Eigen accessoire (bv. Dakdragers)"
+        value={name}
+        maxLength={120}
+        onChange={(e) => setName(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+      />
+      <input
+        type="text"
+        inputMode="decimal"
+        placeholder="Prijs incl. btw (€)"
+        value={price}
+        onChange={(e) => setPrice(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+      />
+      <button type="button" className="btn btn-outline" onClick={add} disabled={!valid}>Toevoegen</button>
+    </div>
+  )
+}
 
 function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccessory, vehicle }) {
   // Show only the options scoped to this exact trim — by whole-model name or by trim id
@@ -18,7 +74,11 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
     if (i === -1) availableAccessories.push(acc)
     else if (scopeCount(acc) && !scopeCount(availableAccessories[i])) availableAccessories[i] = acc
   }
-  const categories = [...new Set(availableAccessories.map(a => a.category))]
+  // The salesperson's own accessories are listed with the catalog ones of their section.
+  const customAccessories = selectedAccessories.filter(a => a.custom)
+  const shownAccessories = [...availableAccessories, ...customAccessories]
+  // The Accessoires section always shows, so there is always a place to add your own.
+  const categories = [...new Set([...availableAccessories.map(a => a.category), ACCESSORY_CATEGORY])]
 
   return (
     <div className="option-list">
@@ -27,11 +87,11 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
         return (
           <div key={category} className="option-category">
             <h4 className="option-category-title">
-              {category === 'verplicht' ? 'Standaard' : category.charAt(0).toUpperCase() + category.slice(1)}
+              {categoryTitle(category)}
               {isSingleSelect && <span className="option-category-hint"> — kies max. 1</span>}
             </h4>
             <div className="option-category-list">
-              {availableAccessories
+              {shownAccessories
                 .filter(acc => acc.category === category)
                 .map(acc => {
                   // A "mandatory" accessory (the delivery pack) is ticked by default when an
@@ -54,11 +114,13 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
                       <div className="option-copy">
                         <div className="option-title">{acc.name}</div>
                         {acc.mandatory && <div className="option-mandatory-note">Standaard inbegrepen</div>}
+                        {acc.custom && <div className="option-mandatory-note">Eigen accessoire</div>}
                       </div>
                       <div className="option-price">{formatPrice(acc.price)}</div>
                     </label>
                   )
                 })}
+              {category === ACCESSORY_CATEGORY && <CustomAccessoryForm onAdd={onSelectAccessory} />}
             </div>
           </div>
         )
