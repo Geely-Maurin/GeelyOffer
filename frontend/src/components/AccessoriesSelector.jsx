@@ -7,10 +7,10 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
   // Show only the options scoped to this exact trim — by whole-model name or by trim id
   // (see accessoryAppliesToVehicle / AdminAccessories.jsx's "Beschikbaar voor").
   const applicableAccessories = accessoriesForVehicle(accessories, vehicle)
-  // Collapse accessories that share a name and both apply here (e.g. a mandatory "Delivery
+  // Collapse accessories that share a name and both apply here (e.g. a "Delivery
   // Pack" that has drifted to also being "all models" alongside the model-specific one),
   // preferring the more specifically scoped row — otherwise it renders as two identical
-  // locked rows and gets counted twice. Mirrors resolveMandatoryAccessories in routes/quotes.js.
+  // rows and gets counted twice.
   const scopeCount = a => (a.vehicleModels?.length || 0) + (a.vehicleTrims?.length || 0)
   const availableAccessories = []
   for (const acc of applicableAccessories) {
@@ -27,27 +27,25 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
         return (
           <div key={category} className="option-category">
             <h4 className="option-category-title">
-              {category.charAt(0).toUpperCase() + category.slice(1)}
+              {category === 'verplicht' ? 'Standaard' : category.charAt(0).toUpperCase() + category.slice(1)}
               {isSingleSelect && <span className="option-category-hint"> — kies max. 1</span>}
             </h4>
             <div className="option-category-list">
               {availableAccessories
                 .filter(acc => acc.category === category)
                 .map(acc => {
-                  // Mandatory accessories (e.g. the delivery pack) are always included and
-                  // can't be unchecked — shown as a locked, always-selected row instead of
-                  // an interactive one so it's clear it's not optional.
-                  const selected = acc.mandatory || selectedAccessories.some(a => a.id === acc.id)
+                  // A "mandatory" accessory (the delivery pack) is ticked by default when an
+                  // offer starts, but the salesperson can untick it like any other option.
+                  const selected = selectedAccessories.some(a => a.id === acc.id)
 
                   return (
                     <label
                       key={acc.id}
-                      className={`option-item ${selected ? 'selected' : ''} ${acc.mandatory ? 'option-item-locked' : ''}`}
+                      className={`option-item ${selected ? 'selected' : ''}`}
                     >
                       <input
                         type="checkbox"
                         checked={selected}
-                        disabled={acc.mandatory}
                         onChange={() => onSelectAccessory(acc)}
                       />
                       {acc.colorHex && (
@@ -55,7 +53,7 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
                       )}
                       <div className="option-copy">
                         <div className="option-title">{acc.name}</div>
-                        {acc.mandatory && <div className="option-mandatory-note">Altijd inbegrepen</div>}
+                        {acc.mandatory && <div className="option-mandatory-note">Standaard inbegrepen</div>}
                       </div>
                       <div className="option-price">{formatPrice(acc.price)}</div>
                     </label>

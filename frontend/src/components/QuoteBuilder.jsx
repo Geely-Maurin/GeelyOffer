@@ -170,23 +170,18 @@ function QuoteBuilder({ onQuoteCreated }) {
       })
   }, [selectedVariant, selectedColorAccessoryId, selectedInteriorAccessoryId])
 
-  // Mandatory accessories (e.g. the delivery pack) are always part of the quote — add
-  // any that apply to the selected model and aren't already in the list, so the live
-  // price preview and the step 4 overview both reflect them without the user having to
-  // do anything. The backend also injects these independently on save, so this is about
-  // an accurate live preview, not the source of truth for what actually gets billed.
+  // "Mandatory" accessories (the delivery pack) are ticked by default: added whenever the
+  // model or trim is picked, so every new offer starts with them. The salesperson can
+  // untick them in step 3, and the backend bills exactly what is sent.
   useEffect(() => {
     if (!selectedModel || accessories.length === 0) return
     // Once a trim is picked we scope by it exactly; before that (step 1/2) we still match
-    // whole-model mandatory fees against the model name. The backend applies mandatory
-    // fees on save regardless (resolveMandatoryAccessories); this is purely so the live
-    // preview total matches what actually gets billed.
+    // whole-model mandatory fees against the model name.
     const previewVehicle = selectedVariant || { id: null, name: selectedModel }
     const applicable = accessories.filter((a) => a.mandatory && accessoryAppliesToVehicle(a, previewVehicle))
     // Collapse same-named mandatory fees (e.g. a "Delivery Pack" that ends up both
     // model-specific and "all models") to one, preferring the more specifically scoped row
-    // — mirrors resolveMandatoryAccessories in routes/quotes.js so the preview total
-    // matches the bill instead of showing the fee twice.
+    // instead of adding the fee twice.
     const scopeCount = (a) => (a.vehicleModels?.length || 0) + (a.vehicleTrims?.length || 0)
     const mandatory = []
     for (const a of applicable) {
@@ -524,7 +519,6 @@ function QuoteBuilder({ onQuoteCreated }) {
                   selectedAccessories={selectedAccessories}
                   vehicle={selectedVariant}
                   onSelectAccessory={(acc) => {
-                    if (acc.mandatory) return
                     const alreadySelected = selectedAccessories.find(a => a.id === acc.id)
                     if (alreadySelected) {
                       setSelectedAccessories(selectedAccessories.filter(a => a.id !== acc.id))

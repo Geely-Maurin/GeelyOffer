@@ -134,7 +134,7 @@ describe('server integration', () => {
     assert.equal(accessories.length, 24);
   });
 
-  test('a Geely E2 quote gets the mandatory Delivery Pack, and the charging cables apply to the E2', async () => {
+  test('the Delivery Pack is billed when sent and can be left off, and the charging cables apply to the E2', async () => {
     const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -156,13 +156,22 @@ describe('server integration', () => {
         customerName: 'E2 Delivery Pack Test',
         selectedVehicleId: 'geely-e2-pro',
         configuration: { vehicleName: 'Geely E2', vehicleModel: 'PRO' },
-        accessories: [],
+        accessories: [{ id: 'delivery-pack' }],
         discountPercentage: 0,
       }),
     });
     assert.equal(quoteRes.status, 201);
     const quote = await quoteRes.json();
     assert.equal(quote.totalPrice, 21490 + 949, 'E2 PRO adviesprijs plus the Delivery Pack, exactly once');
+
+    // A salesperson may untick the Delivery Pack: the server no longer forces it back in.
+    const withoutRes = await fetch(`${BASE_URL}/api/quotes/${quote.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ accessories: [] }),
+    });
+    assert.equal(withoutRes.status, 200);
+    assert.equal((await withoutRes.json()).totalPrice, 21490, 'unticking the Delivery Pack removes it from the total');
 
     const deleteRes = await fetch(`${BASE_URL}/api/quotes/${quote.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
     assert.equal(deleteRes.status, 204);
@@ -195,11 +204,8 @@ describe('server integration', () => {
     assert.equal(quoteRes.status, 201);
     const quote = await quoteRes.json();
 
-    // The mandatory Delivery Pack (€949 incl. BTW) is injected server-side regardless of
-    // what's submitted (see resolveMandatoryAccessories in routes/quotes.js) — so even an
-    // empty accessories list still adds it on top of the bare adviesprijs.
-    const DELIVERY_PACK_PRICE_INCL_VAT = 949.00;
-    assert.equal(quote.totalPrice, e5pro.basePrice + DELIVERY_PACK_PRICE_INCL_VAT, 'incl-VAT total should equal the adviesprijs plus the mandatory delivery pack, with no discount/other accessories');
+    // Nothing is added server-side: an empty accessories list bills the bare adviesprijs.
+    assert.equal(quote.totalPrice, e5pro.basePrice, 'incl-VAT total should equal the adviesprijs with no discount/accessories');
     assert.ok(quote.subtotal < quote.totalPrice, 'excl-VAT subtotal should be lower than the incl-VAT total');
     assert.equal(Math.round((quote.subtotal + quote.vatAmount) * 100) / 100, quote.totalPrice);
     assert.equal(quote.createdByName, 'Integration Admin');
@@ -207,52 +213,6 @@ describe('server integration', () => {
     // Clean up the quote we just created
     const deleteRes = await fetch(`${BASE_URL}/api/quotes/${quote.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
     assert.equal(deleteRes.status, 204);
-  });
-
-  test('a same-named mandatory fee scoped to "all models" does not double up with the model-specific one', async () => {
-    const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
-    });
-    const cookie = extractCookie(loginRes);
-
-    // Simulate the drift that caused the recurring "Delivery Pack twice on the Starray"
-    // bug: a second mandatory "Delivery Pack" row scoped to every model (empty
-    // vehicleModels), alongside the seeded model-specific delivery-pack-emi.
-    const accRes = await fetch(`${BASE_URL}/api/accessories`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Cookie: cookie },
-      body: JSON.stringify({ name: 'Delivery Pack', price: 949, category: 'verplicht', vehicleModels: [], mandatory: true, discountable: false }),
-    });
-    assert.equal(accRes.status, 201);
-    const rogueAccessory = await accRes.json();
-
-    const vehiclesRes = await fetch(`${BASE_URL}/api/vehicles`, { headers: { Cookie: cookie } });
-    const starray = (await vehiclesRes.json()).find((v) => v.name === 'Starray EM-i');
-    assert.ok(starray, 'a Starray EM-i trim should exist in the seed data');
-
-    const quoteRes = await fetch(`${BASE_URL}/api/quotes`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Cookie: cookie },
-      body: JSON.stringify({
-        customerName: 'Starray Dup Test',
-        selectedVehicleId: starray.id,
-        configuration: { vehicleName: starray.name, vehicleModel: starray.model },
-        accessories: [],
-        discountPercentage: 0,
-      }),
-    });
-    assert.equal(quoteRes.status, 201);
-    const quote = await quoteRes.json();
-
-    // Exactly one €949 Delivery Pack, not two.
-    const deliveryLines = quote.items.filter((i) => i.name === 'Delivery Pack');
-    assert.equal(deliveryLines.length, 1, 'the Delivery Pack must appear exactly once');
-    assert.equal(quote.totalPrice, starray.basePrice + 949, 'total should include the delivery pack exactly once');
-
-    await fetch(`${BASE_URL}/api/quotes/${quote.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
-    await fetch(`${BASE_URL}/api/accessories/${rogueAccessory.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
   });
 
   test('an option scoped to specific trims is only accepted on those trims', async () => {

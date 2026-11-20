@@ -645,14 +645,6 @@ textarea {
   border-color: var(--text);
 }
 
-.option-item-locked {
-  cursor: default;
-}
-
-.option-item-locked input {
-  cursor: default;
-}
-
 .option-mandatory-note {
   margin-top: 2px;
   font-size: 0.72rem;

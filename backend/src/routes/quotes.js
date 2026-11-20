@@ -166,47 +166,11 @@ async function resolveAccessories(items, vehicle) {
   return resolved;
 }
 
-// Mandatory accessories (e.g. the delivery pack fee) are added here — server-side,
-// unconditionally — rather than relying on the client to include them. The quote
-// builder never lets a user deselect one, but resolving them independently of whatever
-// the client sent means a quote is correctly priced even if the frontend has a bug, or
-// the request was crafted by hand to omit it.
-async function resolveMandatoryAccessories(vehicle) {
-  const rows = await allAsync('SELECT * FROM accessories WHERE mandatory = 1 AND active = 1', []);
-  const applicable = rows.filter((row) => accessoryAppliesToVehicle(row, vehicle));
-
-  // The delivery pack is configured as one mandatory row per model ('delivery-pack-e5',
-  // 'delivery-pack-emi'), all sharing the name "Delivery Pack". If one of those rows ever
-  // gets its scope widened to "all models" — e.g. an admin clears every model checkbox in
-  // Beheer → Opties, which the API stores as an empty (= universal) list — then BOTH the
-  // universal row and the model-specific row match that model here, and the same fee gets
-  // attached twice to every quote for it, re-created on every save. Collapsing same-named
-  // mandatory rows to one (preferring the model-specific row so the kept line is the most
-  // precise) makes that duplication impossible regardless of how the catalog is scoped.
-  const byName = new Map();
-  for (const row of applicable) {
-    const current = byName.get(row.name);
-    if (!current) {
-      byName.set(row.name, row);
-      continue;
-    }
-    const isSpecific = (r) => JSON.parse(r.vehicleModels || '[]').length > 0 || JSON.parse(r.vehicleTrims || '[]').length > 0;
-    if (isSpecific(row) && !isSpecific(current)) byName.set(row.name, row);
-  }
-
-  return [...byName.values()].map((row) => ({ id: row.id, name: row.name, price: row.price, quantity: 1, category: row.category, discountable: !!row.discountable }));
-}
-
-// Merges resolved client accessories with the vehicle's mandatory ones, the client's
-// copy of a mandatory item (it shouldn't send one, but a hand-crafted request might)
-// losing out to the authoritative one so it's never duplicated or priced differently.
-// The single-select check runs on this final merged list, not just the client-submitted
-// half, so it stays correct even if a future mandatory accessory is ever configured into
-// a single-select category (e.g. 'exterior') — it can't quietly slip past validation just
-// because it arrived via the mandatory path instead of the client's own selection.
-function mergeMandatoryAccessories(resolvedAccessories, mandatoryAccessories) {
-  const mandatoryIds = new Set(mandatoryAccessories.map((a) => a.id));
-  const merged = [...resolvedAccessories.filter((a) => !mandatoryIds.has(a.id)), ...mandatoryAccessories];
+// Checks the single-select categories (e.g. one paint colour) on the submitted options.
+// "Mandatory" accessories (the Delivery Pack) are no longer forced in here: the quote
+// builder ticks them by default, but a salesperson may untick them, so what the client
+// sends is what gets billed.
+function checkSingleSelect(merged) {
 
   for (const category of SINGLE_SELECT_CATEGORIES) {
     const picked = merged.filter((a) => a.category === category);
@@ -224,7 +188,7 @@ function mergeMandatoryAccessories(resolvedAccessories, mandatoryAccessories) {
 // stands in whenever a quote has no exterior colour of its own — a customer who doesn't
 // upgrade to a paid metallic still gets a colour line on the quote and PDF, and the
 // stock-match in QuoteBuilder has an id to key off. It can't be a `mandatory` accessory:
-// 'exterior' is single-select, so mergeMandatoryAccessories above would reject any quote
+// 'exterior' is single-select, so checkSingleSelect above would reject any quote
 // that also carries a paid colour. So it's applied here as a fallback only — never when
 // an exterior colour is already present. Mirrors QuoteBuilder/QuoteEditor, which
 // pre-select it in the live preview.
@@ -527,9 +491,8 @@ router.post('/', async (req, res) => {
     const id = uuidv4();
     const basePrice = vehicle.basePrice;
 
-    const mandatoryAccessories = await resolveMandatoryAccessories(vehicle);
     const resolvedAccessories = await applyDefaultPaintColor(
-      mergeMandatoryAccessories(await resolveAccessories(accessories, vehicle), mandatoryAccessories),
+      checkSingleSelect(await resolveAccessories(accessories, vehicle)),
       vehicle
     );
     const accessoriesTotal = resolvedAccessories.reduce((sum, acc) => sum + acc.price * acc.quantity, 0);
@@ -820,12 +783,11 @@ router.put('/:id', async (req, res) => {
     // and specifically which portion of it is exempt from the discount — is recalculated
     // unconditionally below, even for edits that only touch the discount or customer info.
     const vehicle = await getAsync('SELECT id, name FROM vehicles WHERE id = ?', [quote.selectedVehicleId]);
-    const mandatoryAccessories = vehicle ? await resolveMandatoryAccessories(vehicle) : [];
 
     let resolvedAccessories = null;
     if (accessories) {
       resolvedAccessories = await applyDefaultPaintColor(
-        mergeMandatoryAccessories(await resolveAccessories(accessories, vehicle), mandatoryAccessories),
+        checkSingleSelect(await resolveAccessories(accessories, vehicle)),
         vehicle
       );
     }

@@ -9,7 +9,7 @@ const CATEGORY_SECTIONS = [
   { key: 'exterior', label: 'Exterieur (lakkleuren)' },
   { key: 'interior', label: 'Interieur (bekleding)' },
   { key: 'techniek', label: 'Techniek & accessoires' },
-  { key: 'verplicht', label: 'Verplicht' },
+  { key: 'verplicht', label: 'Standaard' },
 ]
 const OTHER_SECTION = { key: '__other__', label: 'Overig' }
 const isKnownCategory = (category) => CATEGORY_SECTIONS.some((s) => s.key === category)
@@ -194,7 +194,7 @@ function AccessoryFormModal({ accessory, vehicles, onClose, onSaved }) {
           <div className="form-group">
             <label style={{ display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'none' }}>
               <input type="checkbox" checked={form.mandatory} onChange={(e) => set('mandatory', e.target.checked)} style={{ width: '16px', height: '16px' }} />
-              Verplicht (wordt altijd toegevoegd, klant kan ze niet uitvinken)
+              Standaard aangevinkt (wordt automatisch toegevoegd aan een nieuwe offerte, de verkoper kan het uitvinken)
             </label>
           </div>
           <div className="form-group">
@@ -371,7 +371,7 @@ function AdminAccessories() {
                       <td style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>{availabilitySummary(acc)}</td>
                       <td>
                         {!acc.active && <span className="badge draft" style={{ marginRight: '6px' }}>Inactief</span>}
-                        {acc.mandatory && <span className="badge declined" style={{ marginRight: '6px' }}>Verplicht</span>}
+                        {acc.mandatory && <span className="badge declined" style={{ marginRight: '6px' }}>Standaard</span>}
                         {!acc.discountable && <span className="badge expiry-soon">Geen korting</span>}
                       </td>
                       {canManage && (

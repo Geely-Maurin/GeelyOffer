@@ -4,7 +4,7 @@ import {
   QUOTE_STATUSES, STATUS_LABELS, DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS,
   SINGLE_SELECT_CATEGORIES,
 } from '../utils/constants'
-import { accessoryAppliesToVehicle, accessoriesForVehicle, standardPaintFor } from '../utils/accessoryScope'
+import { accessoriesForVehicle, standardPaintFor } from '../utils/accessoryScope'
 import { missingCustomerFields } from '../utils/customerInfo'
 import { useAuth } from '../context/AuthContext'
 import CustomerForm from './CustomerForm'
@@ -67,7 +67,6 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
         // this vehicle (e.g. a "Delivery Pack" that has drifted to also being "all models"
         // alongside the model-specific one), keep only one per name — preferring the more
         // specific row — so the quote doesn't load, show and re-save that line twice.
-        // Mirrors resolveMandatoryAccessories in routes/quotes.js.
         const matched = accessoriesForVehicle(catalog, vehicleData).filter((acc) =>
           quote.items?.some((item) => item.itemName === acc.name)
         )
@@ -130,29 +129,6 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
       .catch((err) => { if (!cancelled) setError('Kon prijs niet berekenen: ' + err.message) })
     return () => { cancelled = true }
   }, [vehicle, selectedAccessories, discountType, discountValue])
-
-  // Same reasoning as QuoteBuilder.jsx: keeps the live preview accurate for a quote that
-  // predates this feature (or was edited before the mandatory item existed). The backend
-  // injects it independently on save regardless of what's sent here.
-  useEffect(() => {
-    if (!vehicle || accessoriesCatalog.length === 0) return
-    const applicable = accessoriesCatalog.filter((a) => a.mandatory && accessoryAppliesToVehicle(a, vehicle))
-    // Collapse same-named mandatory fees to one (preferring the more specifically scoped
-    // row) — mirrors resolveMandatoryAccessories in routes/quotes.js, so a "Delivery Pack"
-    // that has drifted to also being "all models" doesn't show on the quote twice.
-    const scopeCount = (a) => (a.vehicleModels?.length || 0) + (a.vehicleTrims?.length || 0)
-    const mandatory = []
-    for (const a of applicable) {
-      const dupeIndex = mandatory.findIndex((m) => m.name === a.name)
-      if (dupeIndex === -1) mandatory.push(a)
-      else if (scopeCount(a) && !scopeCount(mandatory[dupeIndex])) mandatory[dupeIndex] = a
-    }
-    if (mandatory.length === 0) return
-    setSelectedAccessories((prev) => {
-      const missing = mandatory.filter((m) => !prev.some((p) => p.id === m.id || p.name === m.name))
-      return missing.length ? [...prev, ...missing] : prev
-    })
-  }, [vehicle, accessoriesCatalog])
 
   // Same reasoning as QuoteBuilder.jsx: every quote carries an exterior-colour line, so
   // the free "Standaardkleur: Wit" (€0) stands in whenever the exterior category is empty
@@ -238,7 +214,6 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
                   selectedAccessories={selectedAccessories}
                   vehicle={vehicle}
                   onSelectAccessory={(acc) => {
-                    if (acc.mandatory) return
                     setSelectedAccessories((prev) => {
                       if (prev.some((a) => a.id === acc.id)) return prev.filter((a) => a.id !== acc.id)
                       if (SINGLE_SELECT_CATEGORIES.includes(acc.category)) {
