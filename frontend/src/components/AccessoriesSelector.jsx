@@ -80,10 +80,17 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
   }
   // The salesperson's own accessories are listed with the catalog ones of their section.
   const customAccessories = selectedAccessories.filter(a => a.custom)
-  // The model's free standard colour is always listed first among the colours.
+  // Colours are listed from cheapest to most expensive, the model's free standard colour
+  // always first; other sections keep their catalog order.
   const standardPaintId = standardPaintFor(accessories, vehicle)?.id
+  const byColourOrder = (a, b) => (b.id === standardPaintId) - (a.id === standardPaintId)
+    || a.price - b.price
+    || a.name.localeCompare(b.name)
   const shownAccessories = [...availableAccessories, ...customAccessories]
-    .sort((a, b) => (b.id === standardPaintId) - (a.id === standardPaintId))
+  const inCategory = (category) => {
+    const list = shownAccessories.filter(acc => acc.category === category)
+    return category === 'exterior' ? list.sort(byColourOrder) : list
+  }
   // The Accessoires section always shows, so there is always a place to add your own.
   const categories = [...new Set([...availableAccessories.map(a => a.category), ACCESSORY_CATEGORY])]
 
@@ -98,8 +105,7 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
               {isSingleSelect && <span className="option-category-hint"> — kies max. 1</span>}
             </h4>
             <div className="option-category-list">
-              {shownAccessories
-                .filter(acc => acc.category === category)
+              {inCategory(category)
                 .map(acc => {
                   // A "mandatory" accessory (the delivery pack) is ticked by default when an
                   // offer starts, but the salesperson can untick it like any other option.

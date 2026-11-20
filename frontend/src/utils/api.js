@@ -218,24 +218,6 @@ export const api = {
     return request(`/audit-log?${params.toString()}`)
   },
 
-  // Inventory (physical stock units)
-  async getInventory({ vehicleId = '', branchId = '', status = '' } = {}) {
-    const params = new URLSearchParams()
-    if (vehicleId) params.set('vehicleId', vehicleId)
-    if (branchId) params.set('branchId', branchId)
-    if (status) params.set('status', status)
-    const qs = params.toString()
-    return request(`/inventory${qs ? `?${qs}` : ''}`)
-  },
-  async createInventoryUnit(unitData) {
-    return request('/inventory', { method: 'POST', body: JSON.stringify(unitData) })
-  },
-  async updateInventoryUnit(id, unitData) {
-    return request(`/inventory/${id}`, { method: 'PUT', body: JSON.stringify(unitData) })
-  },
-  async deleteInventoryUnit(id) {
-    return request(`/inventory/${id}`, { method: 'DELETE' })
-  },
 
   // Imports (price lists / documents)
   async uploadImport(file) {

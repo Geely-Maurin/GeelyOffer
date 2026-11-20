@@ -98,7 +98,7 @@ function QuoteList() {
   // Guards against a slower, stale response overwriting a newer one — e.g. rapidly
   // toggling the "Verloopt binnenkort"/"Vervolg nodig" filter pills fires overlapping
   // requests, and without this the one that resolves last (not the one matching the
-  // currently-selected filter) would win. Same pattern as InventoryPage.jsx's load().
+  // currently-selected filter) would win.
   const requestIdRef = useRef(0)
   const load = async () => {
     const requestId = ++requestIdRef.current

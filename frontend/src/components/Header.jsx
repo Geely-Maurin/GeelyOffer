@@ -37,12 +37,6 @@ function Header({ currentPage, onPageChange, onHome }) {
           >
             Offertes overzicht
           </button>
-          <button
-            className={`nav-pill ${currentPage === 'inventory' ? 'active' : ''}`}
-            onClick={() => onPageChange('inventory')}
-          >
-            Voorraad
-          </button>
           {(user?.role === 'admin' || user?.role === 'sales_manager') && (
             <button
               className={`nav-pill ${currentPage === 'reports' ? 'active' : ''}`}

@@ -7,7 +7,6 @@ import ResetPasswordPage from './components/ResetPasswordPage'
 import AcceptQuotePage from './components/AcceptQuotePage'
 import AdminPage from './components/AdminPage'
 import ReportsPage from './components/ReportsPage'
-import InventoryPage from './components/InventoryPage'
 import ChangePasswordModal from './components/ChangePasswordModal'
 import { useAuth } from './context/AuthContext'
 import './App.css'
@@ -61,6 +60,8 @@ function App() {
   const canSeeAdmin = user.role === 'admin' || user.role === 'sales_manager'
   let page = currentPage
   if (page === 'admin' && !canSeeAdmin) page = 'builder'
+  // The Voorraad page was removed; a page remembered from before falls back to the builder.
+  if (page === 'inventory') page = 'builder'
   if (page === 'reports' && !canSeeReports) page = 'builder'
 
   return (
@@ -72,9 +73,6 @@ function App() {
         )}
         {page === 'quotes' && (
           <QuoteList key={quotesRefreshKey} />
-        )}
-        {page === 'inventory' && (
-          <InventoryPage />
         )}
         {page === 'reports' && canSeeReports && (
           <ReportsPage />

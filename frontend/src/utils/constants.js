@@ -8,7 +8,7 @@ export const STATUS_LABELS = {
 }
 
 // Inventory units use a different status vocabulary than quotes above — shared between
-// InventoryPage.jsx and AdminAuditLog.jsx so the two can't drift apart (e.g. a status
+// AdminAuditLog.jsx and AdminPrivacy.jsx so the two can't drift apart (e.g. a status
 // renamed in one place silently going stale in the other).
 export const INVENTORY_STATUSES = ['in_stock', 'incoming', 'reserved', 'sold']
 
@@ -41,15 +41,13 @@ export const DISCOUNT_TYPE_LABELS = {
 // independent checkboxes. 'interior' is included even though every model currently has
 // only one interior option (so it's never actually been ambiguous yet) — once a model gets
 // a second one, this is what keeps a customer from ending up with two interiors selected,
-// which would otherwise make the stock-match suggestion (QuoteBuilder.jsx) pick an
-// arbitrary one of the two via .find().
+// which would make the quote ambiguous.
 export const SINGLE_SELECT_CATEGORIES = ['exterior', 'interior']
 
 // The free €0 standard paint colour ("Standaardkleur: Wit") seeded in
 // backend/src/database/init.js (seedStandardPaintColorIfMissing) and applicable to every
 // model. QuoteBuilder and QuoteEditor pre-select it whenever a quote has no exterior
-// colour, so every quote carries a colour line and the stock-match has something to key
-// off; picking a paid metallic replaces it. The backend applies the same fallback on save
+// colour, so every quote carries a colour line; picking a paid metallic replaces it. The backend applies the same fallback on save
 // (applyDefaultPaintColor in routes/quotes.js), so it stays authoritative there too.
 export const STANDARD_PAINT_ACCESSORY_ID = 'paint-standard-white'
 

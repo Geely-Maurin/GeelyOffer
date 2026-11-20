@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { api, formatPrice, exclVat, formatDate } from '../utils/api'
+import { api, formatPrice, exclVat } from '../utils/api'
 import {
   DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS,
   SINGLE_SELECT_CATEGORIES,
@@ -121,55 +121,6 @@ function QuoteBuilder({ onQuoteCreated }) {
     }
   }, [selectedVariant, selectedAccessories, discountType, discountValue])
 
-  // Suggests an exact match from physical stock — same variant, same exterior color, and
-  // (when the customer picked one) the same interior/upholstery — so a rep can offer a
-  // customer a car that's already on the lot (faster delivery) instead of defaulting to a
-  // special order without realizing one's available. The exterior color is always required
-  // to match ("perfectly corresponds" is the point — a looser match belongs in the
-  // Voorraad tab's own filters, not a suggestion implying this exact car is sitting there),
-  // but interior is only enforced when the customer actually selected one: most models
-  // still have zero or one interior option today (real choices are being added to the
-  // catalog next), and a rep who never touches that category shouldn't lose the color
-  // match just because interior wasn't part of what they configured.
-  const [matchingStock, setMatchingStock] = useState({ inStock: [], incoming: [] })
-  const stockMatchRequestIdRef = useRef(0)
-  // Depending on the actual color/interior accessory id (not the whole selectedAccessories
-  // array) means toggling an unrelated option — a towing hook, a charging cable — doesn't
-  // re-trigger this effect and fire a redundant inventory lookup; those ids only actually
-  // change when the color or interior selection itself changes.
-  const selectedColorAccessoryId = selectedAccessories.find((acc) => acc.category === 'exterior')?.id
-  const selectedInteriorAccessoryId = selectedAccessories.find((acc) => acc.category === 'interior')?.id
-  useEffect(() => {
-    // Bumped unconditionally, before the early-return below, so a request already in
-    // flight is correctly invalidated even when the new state is "nothing selected" — the
-    // early return still needs to win over a slower, now-stale response that resolves
-    // after it. (Bumping only on the fetch path let a stale response's `requestId` still
-    // equal the never-advanced ref, so it would "win" and repopulate a notice for a color
-    // the rep had already deselected.)
-    const requestId = ++stockMatchRequestIdRef.current
-    if (!selectedVariant || !selectedColorAccessoryId) {
-      setMatchingStock({ inStock: [], incoming: [] })
-      return
-    }
-    api.getInventory({ vehicleId: selectedVariant.id })
-      .then((units) => {
-        if (requestId !== stockMatchRequestIdRef.current) return
-        const matches = units.filter((u) =>
-          u.colorAccessoryId === selectedColorAccessoryId
-          && (!selectedInteriorAccessoryId || u.interiorAccessoryId === selectedInteriorAccessoryId)
-        )
-        setMatchingStock({
-          inStock: matches.filter((u) => u.status === 'in_stock'),
-          incoming: matches.filter((u) => u.status === 'incoming'),
-        })
-      })
-      .catch(() => {
-        // A failed lookup shouldn't block quote building — just skip the suggestion.
-        if (requestId !== stockMatchRequestIdRef.current) return
-        setMatchingStock({ inStock: [], incoming: [] })
-      })
-  }, [selectedVariant, selectedColorAccessoryId, selectedInteriorAccessoryId])
-
   // "Mandatory" accessories (the delivery pack) are ticked by default: added whenever the
   // model or trim is picked, so every new offer starts with them. The salesperson can
   // untick them in step 3, and the backend bills exactly what is sent.
@@ -202,7 +153,7 @@ function QuoteBuilder({ onQuoteCreated }) {
   // paid colour — while picking a paid colour swaps it out via the single-select branch
   // in the selector's onSelect handler below. The backend applies the same fallback on
   // save (applyDefaultPaintColor in routes/quotes.js); this just keeps the live preview
-  // and the stock-match honest.
+  // honest.
   // Switching trims can invalidate an option that was only offered on the previous one
   // (e.g. an interior colour available on MAX+ but not PRO) — drop those so the quote and
   // the save request stay consistent with the chosen trim.
@@ -227,7 +178,7 @@ function QuoteBuilder({ onQuoteCreated }) {
   // Guards against a slower, stale calculatePricing() response overwriting a newer one —
   // e.g. rapid discount edits can fire two overlapping requests, and without this the one
   // that happens to resolve last (not the one actually matching the current form) wins.
-  // Same pattern as InventoryPage.jsx's load().
+  // Guards against a slower, stale response overwriting a newer one.
   const pricingRequestIdRef = useRef(0)
 
   const loadData = async () => {
@@ -361,11 +312,6 @@ function QuoteBuilder({ onQuoteCreated }) {
   const selectedInteriorAccessory = selectedAccessories.find((acc) => acc.category === 'interior')
   const previewInteriorImage = (selectedInteriorAccessory && VEHICLE_UPHOLSTERY_IMAGES[selectedInteriorAccessory.name])
     || (selectedVariant && VEHICLE_INTERIOR_IMAGES[selectedVariant.name])
-
-  // Describes exactly what the stock-match notice below actually matched on, so it never
-  // claims "same interior" for a match that only checked variant + color (see the
-  // matchingStock effect above — interior is only enforced when the customer picked one).
-  const stockMatchDescription = selectedInteriorAccessory ? 'uitvoering, kleur en interieur' : 'uitvoering en kleur'
 
   const stepLabels = isShowroom
     ? ['Model', 'Uitvoering', 'Opties']
@@ -514,34 +460,6 @@ function QuoteBuilder({ onQuoteCreated }) {
                   }}
                 />
               </div>
-
-              {(matchingStock.inStock.length > 0 || matchingStock.incoming.length > 0) && (
-                <div className="card">
-                  {matchingStock.inStock.length > 0 ? (
-                    <div className="customer-history-notice">
-                      <strong>🚗 Op voorraad!</strong> Dit exacte voertuig (zelfde {stockMatchDescription}) staat al klaar — sneller leverbaar dan een nieuwe bestelling. Overweeg dit voor te stellen aan de klant:
-                      <ul>
-                        {matchingStock.inStock.map((u) => (
-                          <li key={u.id}>
-                            {u.branchName || 'Onbekende vestiging'}{u.vin ? ` · VIN ${u.vin}` : ''}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  ) : (
-                    <div className="customer-history-notice">
-                      <strong>Onderweg</strong> — dit exacte voertuig (zelfde {stockMatchDescription}) is al besteld en komt binnenkort binnen:
-                      <ul>
-                        {matchingStock.incoming.map((u) => (
-                          <li key={u.id}>
-                            {u.branchName || 'Onbekende vestiging'}{u.expectedArrival ? ` · verwacht ${formatDate(u.expectedArrival)}` : ''}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              )}
 
               <div className="card">
                 <div className="section-kicker">Korting</div>

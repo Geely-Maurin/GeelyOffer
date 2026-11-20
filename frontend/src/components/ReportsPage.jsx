@@ -41,7 +41,7 @@ function ReportsPage() {
   // Guards against a slower, stale response overwriting a newer one — clicking "Filteren"
   // again with a different date range/branch before the first request resolves would
   // otherwise let whichever response lands last win, silently showing numbers for a filter
-  // combination that's no longer selected. Same pattern as InventoryPage.jsx's load().
+  // combination that's no longer selected.
   const requestIdRef = useRef(0)
   const load = async () => {
     const requestId = ++requestIdRef.current
