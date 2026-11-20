@@ -92,7 +92,6 @@ function QuoteList() {
   const menuItems = (quote) => {
     if (quote.isShowroom) return []
     const items = [{ label: 'Dupliceren', onClick: () => handleDuplicate(quote.id) }]
-    if (quote.customerEmail) items.push({ label: 'Mail naar klant', onClick: () => handleSendEmail(quote.id) })
     return items
   }
 
@@ -165,11 +164,6 @@ function QuoteList() {
 
   const handleDuplicate = (quoteId) => withBusy(quoteId, async () => {
     await api.duplicateQuote(quoteId)
-    await load()
-  })
-
-  const handleSendEmail = (quoteId) => withBusy(quoteId, async () => {
-    await api.sendQuoteEmail(quoteId)
     await load()
   })
 
@@ -352,7 +346,7 @@ function QuoteList() {
                     <td>
                       <div className="row-actions">
                         <button className="btn btn-primary" onClick={() => handleDownloadPDF(quote.id)} disabled={busyIds.includes(quote.id)}>
-                          PDF
+                          Offerte
                         </button>
                         {!quote.isShowroom && (
                           <button

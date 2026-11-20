@@ -135,9 +135,6 @@ export const api = {
     if (excludeId) params.set('excludeId', excludeId)
     return request(`/quotes/customer-history?${params.toString()}`)
   },
-  async sendQuoteEmail(id) {
-    return request(`/quotes/${id}/send-email`, { method: 'POST' })
-  },
   quotesCsvUrl() {
     return `${API_BASE_URL}/quotes/export.csv`
   },
