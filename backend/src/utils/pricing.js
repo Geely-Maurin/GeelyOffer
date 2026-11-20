@@ -61,20 +61,6 @@ export function calculatePricing(basePrice, accessoriesPrice = 0, discountType =
   };
 }
 
-// Above these, a discount needs a sales manager/admin's sign-off before the quote can
-// be sent or accepted — tune freely, these are just sensible starting points for a
-// dealership selling €30-45k cars. A discount applied BY a manager/admin never needs
-// this (they're the approver), regardless of size.
-export const DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE = 15;
-export const DISCOUNT_APPROVAL_THRESHOLD_FIXED = 3000;
-
-export function discountNeedsApproval(discountType, discountValue) {
-  if (!discountValue) return false;
-  return discountType === 'fixed'
-    ? discountValue > DISCOUNT_APPROVAL_THRESHOLD_FIXED
-    : discountValue > DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE;
-}
-
 export function getDiscountTier(quantity) {
   if (quantity >= 10) return 15;
   if (quantity >= 5) return 10;

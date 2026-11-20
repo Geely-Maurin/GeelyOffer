@@ -100,7 +100,7 @@ All routes except `/health`, `/api/auth/login`, and static assets require a logg
 - `GET/POST/PUT/DELETE /api/quotes`, plus `/api/quotes/:id/duplicate`, `/api/quotes/:id/send-email`, `/api/quotes/export.csv`
 - `POST /api/pricing/calculate`, `GET /api/pricing/discount-tier/:quantity`
 - `GET /api/pdf/:quoteId`
-- `GET /api/order-form/:quoteId` (bestelbon PDF; refused for a showroom offer or a discount still awaiting approval)
+- `GET /api/order-form/:quoteId` (bestelbon PDF; refused for a showroom offer)
 - `GET /api/admin/backup` (admin)
 
 ## Pricing logic

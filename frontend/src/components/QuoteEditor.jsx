@@ -1,9 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { api } from '../utils/api'
 import {
   QUOTE_STATUSES, STATUS_LABELS, DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS,
-  DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE, DISCOUNT_APPROVAL_THRESHOLD_FIXED,
-  DISCOUNT_APPROVAL_STATUS_LABELS, DISCOUNT_APPROVAL_BADGE_CLASS,
   SINGLE_SELECT_CATEGORIES,
 } from '../utils/constants'
 import { accessoryAppliesToVehicle, accessoriesForVehicle, standardPaintFor } from '../utils/accessoryScope'
@@ -14,13 +12,6 @@ import TradeInForm from './TradeInForm'
 import MissingCustomerInfoModal from './MissingCustomerInfoModal'
 import AccessoriesSelector from './AccessoriesSelector'
 import PricingSummary from './PricingSummary'
-
-function needsApprovalWarning(discountType, discountValue, role) {
-  if (['admin', 'sales_manager'].includes(role)) return false
-  return discountType === 'fixed'
-    ? discountValue > DISCOUNT_APPROVAL_THRESHOLD_FIXED
-    : discountValue > DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE
-}
 
 function QuoteEditor({ quoteId, onClose, onSaved }) {
   const { user } = useAuth()
@@ -36,7 +27,6 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
   const [selectedAccessories, setSelectedAccessories] = useState([])
   const [discountType, setDiscountType] = useState('percentage')
   const [discountValue, setDiscountValue] = useState(0)
-  const [discountApprovalStatus, setDiscountApprovalStatus] = useState('not_required')
   const [status, setStatus] = useState('draft')
   const [customerInfo, setCustomerInfo] = useState({
     customerName: '', customerEmail: '', customerPhone: '',
@@ -48,11 +38,6 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
     tradeInYear: '', tradeInMileage: '', tradeInValue: 0,
   })
   const [pricing, setPricing] = useState(null)
-  // What the discount actually was when the quote loaded — compared against the live
-  // discountType/discountValue below so the approval badge can stop claiming an approval
-  // that only ever covered the old value the moment the rep changes it, instead of only
-  // catching up after the next save round-trip.
-  const originalDiscountRef = useRef({ type: 'percentage', value: 0 })
   // The quote's status as it was when THIS edit session loaded — not the live `status`
   // state below, which the rep might be about to change. A customer who already accepted
   // this quote signed off on a specific price/configuration, so a plain rep shouldn't be
@@ -98,8 +83,6 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
         const loadedDiscountValue = (quote.discountType === 'fixed' ? quote.discountEuro : quote.discountPercentage) || 0
         setDiscountType(loadedDiscountType)
         setDiscountValue(loadedDiscountValue)
-        originalDiscountRef.current = { type: loadedDiscountType, value: loadedDiscountValue }
-        setDiscountApprovalStatus(quote.discountApprovalStatus || 'not_required')
         setStatus(quote.status || 'draft')
         setOriginalStatus(quote.status || 'draft')
         setCustomerInfo({
@@ -210,22 +193,6 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
     }
   }
 
-  // discountApprovalStatus reflects what the server last computed for the discount as it
-  // was when this quote loaded — once the rep changes the discount away from that, it no
-  // longer describes the value on screen (e.g. still showing "goedgekeurd" for a since-
-  // approved 10% while the form now holds an unapproved 40%). Re-derive it locally with
-  // the same rule the backend uses (computeDiscountApprovalStatus in routes/quotes.js) the
-  // moment the value diverges, rather than waiting for the next save round-trip.
-  const discountChangedSinceLoad = discountType !== originalDiscountRef.current.type
-    || discountValue !== originalDiscountRef.current.value
-  const displayedApprovalStatus = !discountChangedSinceLoad
-    ? discountApprovalStatus
-    : discountValue <= 0
-      ? 'not_required'
-      : ['admin', 'sales_manager'].includes(user.role)
-        ? 'approved'
-        : (needsApprovalWarning(discountType, discountValue, user.role) ? 'pending' : 'not_required')
-
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-card" onClick={(e) => e.stopPropagation()}>
@@ -319,19 +286,6 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
                   />
                 </div>
               </div>
-
-              {DISCOUNT_APPROVAL_STATUS_LABELS[displayedApprovalStatus] && (
-                <div style={{ marginTop: '10px' }}>
-                  <span className={`badge ${DISCOUNT_APPROVAL_BADGE_CLASS[displayedApprovalStatus]}`}>
-                    {DISCOUNT_APPROVAL_STATUS_LABELS[displayedApprovalStatus]}
-                  </span>
-                </div>
-              )}
-              {needsApprovalWarning(discountType, discountValue, user.role) && (
-                <p style={{ color: 'var(--warning)', fontSize: '0.85rem', fontWeight: 600, marginTop: '10px' }}>
-                  ⚠ Deze korting is groter dan gebruikelijk en vereist goedkeuring van een sales manager voordat de offerte verzonden of geaccepteerd kan worden.
-                </p>
-              )}
 
               <div className="form-row" style={{ marginTop: '16px' }}>
                 <div className="form-group">

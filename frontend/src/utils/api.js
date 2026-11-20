@@ -138,12 +138,6 @@ export const api = {
   async sendQuoteEmail(id) {
     return request(`/quotes/${id}/send-email`, { method: 'POST' })
   },
-  async approveDiscount(id) {
-    return request(`/quotes/${id}/approve-discount`, { method: 'POST' })
-  },
-  async rejectDiscount(id) {
-    return request(`/quotes/${id}/reject-discount`, { method: 'POST' })
-  },
   quotesCsvUrl() {
     return `${API_BASE_URL}/quotes/export.csv`
   },

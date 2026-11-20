@@ -5,7 +5,6 @@ import { formatPrice } from '../utils/pricing.js';
 import { requireAuth, blockPendingPasswordChange } from '../middleware/auth.js';
 import { formatQuoteNumber } from '../utils/quoteNumber.js';
 import { loadQuoteForPdf, registerFonts, resolveExteriorImagePath, LOGO_PATH, LOGO_ASPECT, SELLER_COMPANY } from './pdf.js';
-import { BLOCKING_APPROVAL_STATUSES } from './quotes.js';
 import { ORDER_FORM_TEXT_NL, STANDARD_UPHOLSTERY } from '../data/orderFormText.js';
 import { ORDER_FORM_TEXT_FR } from '../data/orderFormText.fr.js';
 import { LOCALE, resolveLang, translateAccessoryName, translateFuel, powerUnit, DELIVERY_PACK_NAME, deliveryPackContents } from '../i18n/translate.js';
@@ -997,9 +996,6 @@ router.get('/:quoteId', requireAuth, blockPendingPasswordChange, async (req, res
     const { quote, vehicle, items } = await loadQuoteForPdf(req.params.quoteId);
     if (quote.isShowroom) {
       return res.status(400).json({ error: 'Een showroomaanbieding heeft geen klant — maak een offerte op naam van de klant om een bestelbon af te drukken' });
-    }
-    if (BLOCKING_APPROVAL_STATUSES.includes(quote.discountApprovalStatus)) {
-      return res.status(400).json({ error: 'De korting op deze offerte moet eerst goedgekeurd worden door een sales manager voordat er een bestelbon afgedrukt kan worden' });
     }
 
     const branch = quote.branchId ? await getAsync('SELECT * FROM branches WHERE id = ?', [quote.branchId]) : null;

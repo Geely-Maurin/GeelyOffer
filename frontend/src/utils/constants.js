@@ -34,28 +34,6 @@ export const DISCOUNT_TYPE_LABELS = {
   fixed: 'Vast bedrag (€)',
 }
 
-// Mirrors backend/src/utils/pricing.js — display-only, the server is the real gate.
-export const DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE = 15
-export const DISCOUNT_APPROVAL_THRESHOLD_FIXED = 3000
-
-export const DISCOUNT_APPROVAL_STATUS_LABELS = {
-  not_required: null,
-  pending: 'Goedkeuring vereist',
-  approved: 'Korting goedgekeurd',
-  rejected: 'Korting geweigerd',
-}
-
-// Mirrors BLOCKING_APPROVAL_STATUSES in backend/src/routes/quotes.js: a quote whose
-// discount is still waiting for (or was refused) sign-off can't be sent, accepted or turned
-// into a bestelbon yet.
-export const BLOCKING_APPROVAL_STATUSES = ['pending', 'rejected']
-
-export const DISCOUNT_APPROVAL_BADGE_CLASS = {
-  pending: 'expiry-soon',
-  approved: 'accepted',
-  rejected: 'declined',
-}
-
 // A car can only have one paint color, and only one interior/upholstery, at a time —
 // categories listed here are rendered as mutually exclusive in AccessoriesSelector
 // (picking one automatically clears any other selection in the same category), instead of

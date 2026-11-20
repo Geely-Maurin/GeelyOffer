@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react'
 import { api, formatPrice, exclVat, formatDate } from '../utils/api'
 import {
   DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS,
-  DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE, DISCOUNT_APPROVAL_THRESHOLD_FIXED,
   SINGLE_SELECT_CATEGORIES,
 } from '../utils/constants'
 import { accessoryAppliesToVehicle, standardPaintFor } from '../utils/accessoryScope'
@@ -16,13 +15,6 @@ import CustomerForm from './CustomerForm'
 import TradeInForm from './TradeInForm'
 import MissingCustomerInfoModal from './MissingCustomerInfoModal'
 import { VEHICLE_IMAGES, colorFrontImageFor, VEHICLE_STANDARD_COLOR_IMAGES, STANDARD_PAINT_NAME, VEHICLE_REAR_IMAGES, VEHICLE_INTERIOR_IMAGES, VEHICLE_UPHOLSTERY_IMAGES } from '../utils/vehicleImages'
-
-function needsApprovalWarning(discountType, discountValue, role) {
-  if (['admin', 'sales_manager'].includes(role)) return false
-  return discountType === 'fixed'
-    ? discountValue > DISCOUNT_APPROVAL_THRESHOLD_FIXED
-    : discountValue > DISCOUNT_APPROVAL_THRESHOLD_PERCENTAGE
-}
 
 // Known specification keys, in display order — label lookup with a fallback to the
 // raw key so an unrecognized future spec still shows up instead of silently vanishing.
@@ -622,11 +614,6 @@ function QuoteBuilder({ onQuoteCreated }) {
                     />
                   </div>
                 </div>
-                {needsApprovalWarning(discountType, discountValue, user.role) && (
-                  <p style={{ color: 'var(--warning)', fontSize: '0.85rem', fontWeight: 600, marginTop: '4px' }}>
-                    ⚠ Deze korting is groter dan gebruikelijk en vereist goedkeuring van een sales manager voordat de offerte verzonden of geaccepteerd kan worden.
-                  </p>
-                )}
                 <div className="btn-group">
                   <button
                     className="btn btn-outline"

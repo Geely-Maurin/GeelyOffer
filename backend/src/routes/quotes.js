@@ -2,8 +2,8 @@ import express from 'express';
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
 import { allAsync, getAsync, runAsync } from '../database/init.js';
-import { calculatePricing, validatePricingInputs, discountNeedsApproval } from '../utils/pricing.js';
-import { requireAuth, requireManager, isManagerRole, blockPendingPasswordChange } from '../middleware/auth.js';
+import { calculatePricing, validatePricingInputs } from '../utils/pricing.js';
+import { requireAuth, isManagerRole, blockPendingPasswordChange } from '../middleware/auth.js';
 import { loadQuoteForPdf, generateQuotePdfBuffer } from './pdf.js';
 import { sendQuoteEmail } from '../utils/email.js';
 import { logAudit } from '../utils/auditLog.js';
@@ -44,23 +44,13 @@ router.use(requireAuth, blockPendingPasswordChange);
 
 const QUOTE_STATUSES = ['draft', 'sent', 'accepted', 'declined'];
 const OPEN_STATUSES = ['draft', 'sent'];
-const EXPIRY_WARNING_DAYS = 7;
+// How long a (non-showroom) offer stays valid — sets its expiresAt / "Geldig tot" date.
+const QUOTE_VALIDITY_DAYS = 7;
+const QUOTE_VALIDITY_MS = QUOTE_VALIDITY_DAYS * 24 * 60 * 60 * 1000;
+const EXPIRY_WARNING_DAYS = 2;
 // A 'sent' quote the customer hasn't responded to in this many days surfaces as
 // needing a follow-up call — mirrors EXPIRY_WARNING_DAYS's role for the expiry filter.
 const FOLLOWUP_REMINDER_DAYS = 5;
-// Exported so the public quote-acceptance route (routes/quoteAcceptance.js) applies the
-// exact same rule: a customer can't click "accept" on a discount that hasn't cleared
-// manager sign-off internally yet.
-export const BLOCKING_APPROVAL_STATUSES = ['pending', 'rejected'];
-
-// A manager/admin's own discount never needs sign-off — they're the approver. A rep's
-// discount needs one only once it clears the threshold; a small/no discount never does.
-function computeDiscountApprovalStatus(discountType, discountValue, actorRole) {
-  if (!discountValue || discountValue <= 0) return 'not_required';
-  if (isManagerRole(actorRole)) return 'approved';
-  return discountNeedsApproval(discountType, discountValue) ? 'pending' : 'not_required';
-}
-
 // Any rep can see every quote (a colleague's included, for cover during absence — see the
 // unscoped list query below), but mutating one — editing or deleting — is limited to
 // whoever created it or a manager, so a rep can't rewrite or remove a colleague's quote.
@@ -556,17 +546,12 @@ router.post('/', async (req, res) => {
     // accessories like a towing hook) are priced in full but excluded from the discount
     // base, see calculatePricing's docs.
     const pricing = calculatePricing(basePrice, accessoriesTotal, discountType, discountValue, nonDiscountableAccessoriesTotal);
-    // A showroom sheet's discount never needs sign-off — there's no customer to send it to
-    // or accept it, and it self-deletes within 2h. It just shows an action price on the card.
-    const discountApprovalStatus = isShowroom
-      ? 'not_required'
-      : computeDiscountApprovalStatus(discountType, discountValue, req.user.role);
     const branch = await resolveActorBranch(req.user);
     // A showroomaanbieding gets no offer number (sequenceNumber NULL — formatQuoteNumber
-    // shows "Showroom") and a short 2-hour lifetime instead of the usual 30 days; the
+    // shows "Showroom") and a short 2-hour lifetime instead of the usual QUOTE_VALIDITY_DAYS; the
     // purge sweep keys off createdAt, but expiresAt is set consistently anyway.
     const sequenceNumber = isShowroom ? null : await nextSequenceNumber();
-    const expiresAt = new Date(Date.now() + (isShowroom ? 2 * 60 * 60 * 1000 : 30 * 24 * 60 * 60 * 1000)).toISOString();
+    const expiresAt = new Date(Date.now() + (isShowroom ? 2 * 60 * 60 * 1000 : QUOTE_VALIDITY_MS)).toISOString();
 
     // Insert quote
     await runAsync(
@@ -593,7 +578,7 @@ router.post('/', async (req, res) => {
         discountType === 'percentage' ? discountValue : 0,
         discountType === 'fixed' ? discountValue : 0,
         pricing.discountAmount,
-        discountApprovalStatus,
+        'not_required',
         pricing.subtotal,
         pricing.vat,
         pricing.total,
@@ -631,7 +616,7 @@ router.post('/', async (req, res) => {
         entityType: 'quote',
         entityId: id,
         action: 'discount_applied',
-        details: { discountType, discountValue, status: discountApprovalStatus },
+        details: { discountType, discountValue },
         user: req.user,
       });
     }
@@ -660,12 +645,7 @@ router.post('/:id/duplicate', async (req, res) => {
     const sourceItems = await allAsync('SELECT * FROM quote_items WHERE quoteId = ?', [req.params.id]);
 
     const id = uuidv4();
-    // Re-evaluate approval against whoever is duplicating it, not the source quote's
-    // history — a copy made by a different (lower-privileged) rep shouldn't inherit an
-    // approval it didn't earn.
-    const duplicateDiscountValue = source.discountType === 'fixed' ? source.discountEuro : source.discountPercentage;
-    const discountApprovalStatus = computeDiscountApprovalStatus(source.discountType, duplicateDiscountValue, req.user.role);
-    // Same reasoning as the approval re-evaluation above — the copy is attributed to
+    // The copy is attributed to
     // whoever is actually making it, not wherever the original happened to be made.
     const branch = await resolveActorBranch(req.user);
     // A duplicate is a distinct new offer for tracking purposes — it gets its own fresh
@@ -695,13 +675,13 @@ router.post('/:id/duplicate', async (req, res) => {
         source.discountPercentage,
         source.discountEuro,
         source.discountAmount,
-        discountApprovalStatus,
+        'not_required',
         source.subtotal,
         source.vatAmount,
         source.totalPrice,
         source.notes,
         source.language || 'nl',
-        new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        new Date(Date.now() + QUOTE_VALIDITY_MS).toISOString(),
         req.user.id,
         req.user.name,
         req.user.email,
@@ -736,9 +716,6 @@ router.post('/:id/send-email', async (req, res) => {
     if (!quote.customerEmail) {
       return res.status(400).json({ error: 'Deze offerte heeft geen klant-e-mailadres' });
     }
-    if (BLOCKING_APPROVAL_STATUSES.includes(quote.discountApprovalStatus)) {
-      return res.status(400).json({ error: 'De korting op deze offerte moet eerst goedgekeurd worden door een sales manager voordat ze naar de klant verzonden kan worden' });
-    }
 
     // Fresh acceptance token every send — same one-way-hashed scheme as the password
     // reset flow (routes/auth.js). A resend deliberately invalidates any earlier link.
@@ -746,14 +723,14 @@ router.post('/:id/send-email', async (req, res) => {
     const acceptanceTokenHash = crypto.createHash('sha256').update(acceptanceToken).digest('hex');
     const acceptUrl = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/?acceptQuote=${acceptanceToken}`;
 
-    // A quote's expiresAt is fixed 30 days out at creation and never otherwise renewed.
+    // A quote's expiresAt is fixed QUOTE_VALIDITY_DAYS out at creation and never otherwise renewed.
     // Sending it again after that window has already lapsed (e.g. a rep following up on
     // a stale "Vervolg nodig" quote) would otherwise hand the customer a link tied to that
     // same stale date — dead on arrival, or dead within hours. Re-quote it with a fresh
-    // 30-day window instead, so the emailed PDF, the "Geldig tot" date and the acceptance
+    // QUOTE_VALIDITY_DAYS window instead, so the emailed PDF, the "Geldig tot" date and the acceptance
     // link all agree and the link is actually usable for the period the customer is told.
     if (new Date(quote.expiresAt) <= new Date()) {
-      quote.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      quote.expiresAt = new Date(Date.now() + QUOTE_VALIDITY_MS).toISOString();
     }
 
     const pdfBuffer = await generateQuotePdfBuffer({ quote, vehicle, items });
@@ -776,49 +753,6 @@ router.post('/:id/send-email', async (req, res) => {
     res.json({ ...updated, configuration: JSON.parse(updated.configuration) });
   } catch (error) {
     res.status(error.status || 500).json({ error: error.message });
-  }
-});
-
-// Approve or reject a quote's pending discount (sales manager / admin only)
-router.post('/:id/approve-discount', requireManager, async (req, res) => {
-  try {
-    const quote = await getAsync('SELECT * FROM quotes WHERE id = ?', [req.params.id]);
-    if (!quote) {
-      return res.status(404).json({ error: 'Quote not found' });
-    }
-    await runAsync(`UPDATE quotes SET discountApprovalStatus = 'approved', updatedAt = CURRENT_TIMESTAMP WHERE id = ?`, [req.params.id]);
-    await logAudit({
-      entityType: 'quote',
-      entityId: req.params.id,
-      action: 'discount_approved',
-      details: { discountType: quote.discountType, discountValue: quote.discountType === 'fixed' ? quote.discountEuro : quote.discountPercentage },
-      user: req.user,
-    });
-    const updated = await getAsync('SELECT * FROM quotes WHERE id = ?', [req.params.id]);
-    res.json({ ...updated, configuration: JSON.parse(updated.configuration) });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.post('/:id/reject-discount', requireManager, async (req, res) => {
-  try {
-    const quote = await getAsync('SELECT * FROM quotes WHERE id = ?', [req.params.id]);
-    if (!quote) {
-      return res.status(404).json({ error: 'Quote not found' });
-    }
-    await runAsync(`UPDATE quotes SET discountApprovalStatus = 'rejected', updatedAt = CURRENT_TIMESTAMP WHERE id = ?`, [req.params.id]);
-    await logAudit({
-      entityType: 'quote',
-      entityId: req.params.id,
-      action: 'discount_rejected',
-      details: { discountType: quote.discountType, discountValue: quote.discountType === 'fixed' ? quote.discountEuro : quote.discountPercentage },
-      user: req.user,
-    });
-    const updated = await getAsync('SELECT * FROM quotes WHERE id = ?', [req.params.id]);
-    res.json({ ...updated, configuration: JSON.parse(updated.configuration) });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
   }
 });
 
@@ -923,19 +857,9 @@ router.put('/:id', async (req, res) => {
     // docs.
     const pricing = calculatePricing(basePrice, accessoriesTotal, resolvedDiscountType, resolvedDiscountValue, nonDiscountableAccessoriesTotal);
 
-    // Only re-run the approval gate if the discount itself actually changed — otherwise
-    // an unrelated edit (e.g. fixing a typo in the customer's name) by the original rep
-    // would silently re-lock a discount a manager already approved.
     const previousDiscountValue = quote.discountType === 'fixed' ? quote.discountEuro : quote.discountPercentage;
     const discountChanged = resolvedDiscountType !== quote.discountType || resolvedDiscountValue !== previousDiscountValue;
-    const discountApprovalStatus = discountChanged
-      ? computeDiscountApprovalStatus(resolvedDiscountType, resolvedDiscountValue, req.user.role)
-      : quote.discountApprovalStatus;
-
     const finalStatus = status || quote.status;
-    if (['sent', 'accepted'].includes(finalStatus) && BLOCKING_APPROVAL_STATUSES.includes(discountApprovalStatus)) {
-      return res.status(400).json({ error: 'De korting op deze offerte moet eerst goedgekeurd worden door een sales manager voordat de offerte verzonden of geaccepteerd kan worden' });
-    }
 
     // Only stamp sentAt on an actual draft->sent transition here — an edit that leaves an
     // already-sent quote as 'sent' (e.g. a typo fix) must not reset the follow-up clock.
@@ -950,7 +874,7 @@ router.put('/:id', async (req, res) => {
         resolvedDiscountType === 'percentage' ? resolvedDiscountValue : 0,
         resolvedDiscountType === 'fixed' ? resolvedDiscountValue : 0,
         pricing.discountAmount,
-        discountApprovalStatus,
+        'not_required',
         accessoriesTotal,
         pricing.subtotal,
         pricing.vat,
@@ -1003,7 +927,6 @@ router.put('/:id', async (req, res) => {
         details: {
           from: { type: quote.discountType, value: previousDiscountValue },
           to: { type: resolvedDiscountType, value: resolvedDiscountValue },
-          status: discountApprovalStatus,
         },
         user: req.user,
       });

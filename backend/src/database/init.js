@@ -778,12 +778,11 @@ export function initializeDatabase() {
     // so nothing about already-stored quotes changes.
     addColumnIfMissing(database, 'quotes', 'discountType', "TEXT DEFAULT 'percentage'");
     addColumnIfMissing(database, 'quotes', 'discountEuro', 'REAL DEFAULT 0');
-    // Discount approval workflow: 'not_required' (no/small discount, or applied by a
-    // manager/admin who doesn't need sign-off), 'pending' (a rep's discount exceeds the
-    // threshold and needs a manager's sign-off before the quote can be sent/accepted),
-    // 'approved' or 'rejected' (a manager reviewed it). Existing quotes default to
-    // 'not_required' — this workflow only applies going forward.
+    // Legacy column from the dropped discount-approval workflow (salespeople may now give
+    // any discount without a manager's sign-off). Kept so old rows stay readable; every
+    // quote is released from any pending/rejected state it was left in.
     addColumnIfMissing(database, 'quotes', 'discountApprovalStatus', "TEXT DEFAULT 'not_required'");
+    database.run(`UPDATE quotes SET discountApprovalStatus = 'not_required' WHERE discountApprovalStatus != 'not_required'`);
     // Customer detail expansion: type distinguishes which fields apply (a VAT number and
     // company name only make sense for 'bedrijf'), the address columns are split rather
     // than one free-text field so they read cleanly on the PDF and so a VIES lookup can

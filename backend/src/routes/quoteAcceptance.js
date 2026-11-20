@@ -2,7 +2,6 @@ import express from 'express';
 import crypto from 'crypto';
 import { getAsync, runAsync } from '../database/init.js';
 import { logAudit } from '../utils/auditLog.js';
-import { BLOCKING_APPROVAL_STATUSES } from './quotes.js';
 
 const router = express.Router();
 // Deliberately no requireAuth on this router — a customer clicking the link from their
@@ -44,7 +43,6 @@ router.get('/:token', async (req, res) => {
       acceptedAt: quote.acceptedAt,
       acceptedByName: quote.acceptedByName,
       expiresAt: quote.expiresAt,
-      needsApproval: BLOCKING_APPROVAL_STATUSES.includes(quote.discountApprovalStatus),
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -62,9 +60,6 @@ router.post('/:token', async (req, res) => {
     }
     if (quote.status === 'declined') {
       return res.status(400).json({ error: 'Deze offerte is niet meer geldig.' });
-    }
-    if (BLOCKING_APPROVAL_STATUSES.includes(quote.discountApprovalStatus)) {
-      return res.status(400).json({ error: 'Deze offerte kan nog niet online bevestigd worden — neem contact op met uw verkoper.' });
     }
 
     const acceptedByName = (req.body?.acceptedByName || '').trim();

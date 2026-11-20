@@ -90,33 +90,27 @@ function AcceptQuotePage({ token }) {
                 )}
               </div>
 
-              {summary.needsApproval ? (
-                <p style={{ color: 'var(--warning)', fontWeight: 600 }}>
-                  Deze offerte wordt momenteel nog intern beoordeeld. Neem contact op met uw verkoper om te bevestigen.
+              <form onSubmit={handleSubmit}>
+                {submitError && <div className="error">{submitError}</div>}
+                <div className="form-group">
+                  <label htmlFor="accept-name">Volledige naam (ter bevestiging)</label>
+                  <input
+                    id="accept-name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={summary.customerName}
+                    autoFocus
+                    required
+                  />
+                </div>
+                <button className="btn btn-primary" type="submit" disabled={submitting} style={{ width: '100%', marginTop: '6px' }}>
+                  {submitting ? 'Bezig...' : 'Ik ga akkoord met deze offerte'}
+                </button>
+                <p style={{ color: 'var(--muted-soft)', fontSize: '0.76rem', marginTop: '12px' }}>
+                  Deze offerte is geldig tot {formatDate(summary.expiresAt)}.
                 </p>
-              ) : (
-                <form onSubmit={handleSubmit}>
-                  {submitError && <div className="error">{submitError}</div>}
-                  <div className="form-group">
-                    <label htmlFor="accept-name">Volledige naam (ter bevestiging)</label>
-                    <input
-                      id="accept-name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder={summary.customerName}
-                      autoFocus
-                      required
-                    />
-                  </div>
-                  <button className="btn btn-primary" type="submit" disabled={submitting} style={{ width: '100%', marginTop: '6px' }}>
-                    {submitting ? 'Bezig...' : 'Ik ga akkoord met deze offerte'}
-                  </button>
-                  <p style={{ color: 'var(--muted-soft)', fontSize: '0.76rem', marginTop: '12px' }}>
-                    Deze offerte is geldig tot {formatDate(summary.expiresAt)}.
-                  </p>
-                </form>
-              )}
+              </form>
             </>
           )
         )}

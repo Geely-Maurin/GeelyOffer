@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { formatPrice, formatDate, formatQuoteNumber, api } from '../utils/api'
-import { STATUS_LABELS, QUOTE_STATUSES, DISCOUNT_APPROVAL_STATUS_LABELS, DISCOUNT_APPROVAL_BADGE_CLASS, BLOCKING_APPROVAL_STATUSES } from '../utils/constants'
+import { STATUS_LABELS, QUOTE_STATUSES } from '../utils/constants'
 import { useAuth } from '../context/AuthContext'
 import QuoteEditor from './QuoteEditor'
 
 const LIMIT = 20
-const EXPIRY_WARNING_DAYS = 7
+const EXPIRY_WARNING_DAYS = 2
 const OPEN_STATUSES = ['draft', 'sent']
 // Mirrors backend/src/routes/quotes.js's FOLLOWUP_REMINDER_DAYS exactly, so the badge
 // shown here always agrees with what the "Vervolg nodig" filter actually returns.
@@ -40,7 +40,6 @@ function showroomTimeLeft(quote) {
 
 function QuoteList() {
   const { user } = useAuth()
-  const canManageDiscounts = user.role === 'admin' || user.role === 'sales_manager'
   const [quotes, setQuotes] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -90,15 +89,10 @@ function QuoteList() {
   }
 
   // Secondary actions that live in the "Meer ▾" menu rather than as their own buttons.
-  // Discount approval for a quote that's actually waiting on it stays a visible button
-  // (see the row), since that's the one thing a manager needs to spot at a glance.
   const menuItems = (quote) => {
     if (quote.isShowroom) return []
     const items = [{ label: 'Dupliceren', onClick: () => handleDuplicate(quote.id) }]
     if (quote.customerEmail) items.push({ label: 'Mail naar klant', onClick: () => handleSendEmail(quote.id) })
-    if (canManageDiscounts && quote.discountApprovalStatus === 'rejected') {
-      items.push({ label: 'Korting alsnog goedkeuren', onClick: () => handleApproveDiscount(quote.id) })
-    }
     return items
   }
 
@@ -176,16 +170,6 @@ function QuoteList() {
 
   const handleSendEmail = (quoteId) => withBusy(quoteId, async () => {
     await api.sendQuoteEmail(quoteId)
-    await load()
-  })
-
-  const handleApproveDiscount = (quoteId) => withBusy(quoteId, async () => {
-    await api.approveDiscount(quoteId)
-    await load()
-  })
-
-  const handleRejectDiscount = (quoteId) => withBusy(quoteId, async () => {
-    await api.rejectDiscount(quoteId)
     await load()
   })
 
@@ -351,13 +335,6 @@ function QuoteList() {
                           <span className="badge expiry-soon">Vervolg nodig</span>
                         </div>
                       )}
-                      {DISCOUNT_APPROVAL_STATUS_LABELS[quote.discountApprovalStatus] && (
-                        <div style={{ marginTop: '5px' }}>
-                          <span className={`badge ${DISCOUNT_APPROVAL_BADGE_CLASS[quote.discountApprovalStatus]}`}>
-                            {DISCOUNT_APPROVAL_STATUS_LABELS[quote.discountApprovalStatus]}
-                          </span>
-                        </div>
-                      )}
                     </td>
                     <td style={{ fontSize: '0.85rem', color: '#697687' }}>{quote.createdByName || '—'}</td>
                     <td style={{ whiteSpace: 'nowrap' }}>
@@ -381,10 +358,8 @@ function QuoteList() {
                           <button
                             className="btn btn-outline"
                             onClick={() => handleDownloadOrderForm(quote)}
-                            disabled={busyIds.includes(quote.id) || BLOCKING_APPROVAL_STATUSES.includes(quote.discountApprovalStatus)}
-                            title={BLOCKING_APPROVAL_STATUSES.includes(quote.discountApprovalStatus)
-                              ? 'De korting moet eerst goedgekeurd worden door een sales manager'
-                              : 'Bestelbon afdrukken om te laten ondertekenen'}
+                            disabled={busyIds.includes(quote.id)}
+                            title="Bestelbon afdrukken om te laten ondertekenen"
                           >
                             Bestelbon
                           </button>
@@ -393,16 +368,6 @@ function QuoteList() {
                           <button className="btn btn-outline" onClick={() => setEditingQuoteId(quote.id)}>
                             Bewerken
                           </button>
-                        )}
-                        {canManageDiscounts && quote.discountApprovalStatus === 'pending' && (
-                          <>
-                            <button className="btn btn-success" onClick={() => handleApproveDiscount(quote.id)} disabled={busyIds.includes(quote.id)}>
-                              Korting goedkeuren
-                            </button>
-                            <button className="btn btn-danger" onClick={() => handleRejectDiscount(quote.id)} disabled={busyIds.includes(quote.id)}>
-                              Weigeren
-                            </button>
-                          </>
                         )}
                         {menuItems(quote).length > 0 && (
                           <button

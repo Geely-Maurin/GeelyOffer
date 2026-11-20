@@ -433,7 +433,7 @@ describe('server integration', () => {
     assert.equal(roeselare.email, 'verkoop.roeselare@geely-maurin.be');
   });
 
-  test('a bestelbon downloads for a customer quote, but not for a showroom offer or an unapproved discount', async () => {
+  test('a bestelbon downloads for a customer quote, but not for a showroom offer, and a rep’s large discount needs no approval', async () => {
     const adminLogin = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -499,8 +499,7 @@ describe('server integration', () => {
     const showroomPdf = await fetch(`${BASE_URL}/api/order-form/${showroom.id}`, { headers: { Cookie: adminCookie } });
     assert.equal(showroomPdf.status, 400);
 
-    // A rep's discount above the approval threshold stays 'pending' until a manager signs
-    // off — no bestelbon until then.
+    // A rep's large discount needs no manager sign-off: the bestelbon is available at once.
     const repEmail = 'order-form-rep@geely.local';
     const createRep = await fetch(`${BASE_URL}/api/users`, {
       method: 'POST',
@@ -533,9 +532,9 @@ describe('server integration', () => {
       }),
     });
     const pending = await pendingRes.json();
-    assert.equal(pending.discountApprovalStatus, 'pending');
+    assert.equal(pending.discountApprovalStatus, 'not_required');
     const pendingPdf = await fetch(`${BASE_URL}/api/order-form/${pending.id}`, { headers: { Cookie: repCookie } });
-    assert.equal(pendingPdf.status, 400);
+    assert.equal(pendingPdf.status, 200);
 
     for (const id of [quote.id, showroom.id, pending.id]) {
       await fetch(`${BASE_URL}/api/quotes/${id}`, { method: 'DELETE', headers: { Cookie: adminCookie } });
