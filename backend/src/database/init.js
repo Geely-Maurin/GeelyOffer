@@ -439,7 +439,7 @@ function seedAccessoriesIfEmpty(database) {
 // an admin has since edited by hand.
 function fixAccessoryColorDataIfStale(database) {
   database.run(
-    `UPDATE accessories SET name = 'Metallic: Snowy White' WHERE id = 'e5-paint-moss' AND name = 'Metallic: Moss Green'`
+    `UPDATE accessories SET name = 'Standaardkleur: Snowy White' WHERE id = 'e5-paint-moss' AND name = 'Metallic: Moss Green'`
   );
   // Snowy White is the E5's free standard colour, so a deleted row is put back (a row an
   // admin switched off stays off; INSERT OR IGNORE leaves existing rows alone).
@@ -452,7 +452,16 @@ function fixAccessoryColorDataIfStale(database) {
   // It was seeded at €650 before. Only that original price is corrected, so any other
   // price an admin sets is kept.
   database.run(
-    `UPDATE accessories SET price = 0 WHERE id = 'e5-paint-moss' AND name = 'Metallic: Snowy White' AND price = 650`
+    `UPDATE accessories SET price = 0 WHERE id = 'e5-paint-moss' AND name IN ('Metallic: Snowy White', 'Standaardkleur: Snowy White') AND price = 650`
+  );
+  // Every white is a solid (non-metallic) paint: Snowy White was stored as "Metallic:".
+  // Renamed on the catalog row and on the quote lines that carry it, so the offer, the
+  // bestelbon and the edit form all show the corrected name.
+  database.run(
+    `UPDATE accessories SET name = 'Standaardkleur: Snowy White' WHERE id = 'e5-paint-moss' AND name = 'Metallic: Snowy White'`
+  );
+  database.run(
+    `UPDATE quote_items SET itemName = 'Standaardkleur: Snowy White' WHERE itemName = 'Metallic: Snowy White'`
   );
   STANDARD_ACCESSORIES.forEach((acc) => {
     if (!acc.colorHex) return;

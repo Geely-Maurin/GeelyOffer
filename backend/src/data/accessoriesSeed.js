@@ -18,7 +18,7 @@ export const STANDARD_ACCESSORIES = [
   { id: 'e5-paint-black', name: 'Metallic: Carbon Black', price: 650, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#1B1B1D' },
   { id: 'e5-paint-grey', name: 'Metallic: Frost Grey', price: 650, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#9CA3A8' },
   { id: 'e5-paint-silver', name: 'Metallic: Moonlight Silver', price: 650, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#CDD0D2' },
-  { id: 'e5-paint-moss', name: 'Metallic: Snowy White', price: 0, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#F5F5F2' },
+  { id: 'e5-paint-moss', name: 'Standaardkleur: Snowy White', price: 0, category: 'exterior', vehicleModels: ['Geely E5'], colorHex: '#F5F5F2' },
   // Geely E5 - Upholstery
   { id: 'e5-upholstery-ivory', name: 'Bekleding: Ivory White TEP-leder', price: 500, category: 'interior', vehicleModels: ['Geely E5'] },
 
@@ -43,8 +43,8 @@ export const STANDARD_ACCESSORIES = [
 // table — the E2 arrived after most databases were already seeded, so these are inserted
 // per id on every boot by seedGeelyE2AccessoriesIfMissing() in database/init.js instead.
 //
-// Paint: Moon White is the E2's free standard colour, already covered by the shared €0
-// "Standaardkleur: Wit" row, so it has no row of its own. Nebula Beige and Aurora Green
+// Paint: Moon White is the E2's free standard colour (€0), its own row shown instead of
+// the shared "Standaardkleur: Wit" (see MODEL_STANDARD_PAINT_IDS in routes/quotes.js). Nebula Beige and Aurora Green
 // are "Standaardlak" (solid, non-metallic) but still carry a surcharge per the price list
 // (€350 and €650 incl. BTW); the other three are metallic at €650. All six colours are
 // available on every trim. colorHex is a representative swatch taken from the brochure
@@ -58,9 +58,13 @@ export const STANDARD_ACCESSORIES = [
 // MAX+, not available on PRO (prijslijst juli 2026), so it is scoped by trim id.
 export const GEELY_E5_LATER_ACCESSORIES = [
   { id: 'e5-paint-moss-green', name: 'Metallic: Moss Green', price: 650, category: 'exterior', vehicleModels: [], vehicleTrims: ['geely-e5-pro-plus', 'geely-e5-max-plus'], colorHex: '#2F5A3A' },
+  // The Starray EM-i's free standard colour is Alpine White (€0), shown instead of the
+  // shared "Standaardkleur: Wit" — see MODEL_STANDARD_PAINT_IDS in routes/quotes.js.
+  { id: 'emi-paint-alpine', name: 'Standaardkleur: Alpine White', price: 0, category: 'exterior', vehicleModels: ['Starray EM-i'], vehicleTrims: [], colorHex: '#F2F3F1' },
 ];
 
 export const GEELY_E2_ACCESSORIES = [
+  { id: 'e2-paint-moon-white', name: 'Standaardkleur: Moon White', price: 0, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#F4F4F1' },
   { id: 'e2-paint-nebula-beige', name: 'Standaardlak: Nebula Beige', price: 350, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#D6CFBE' },
   { id: 'e2-paint-aurora-green', name: 'Standaardlak: Aurora Green', price: 650, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#B4C9A2' },
   { id: 'e2-paint-nova-pink', name: 'Metallic: Nova Pink', price: 650, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#D7B7BD' },

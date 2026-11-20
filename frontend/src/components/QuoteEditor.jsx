@@ -82,6 +82,9 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
         // lines at their saved price, so editing the quote doesn't silently drop them.
         const customLines = (quote.items || [])
           .filter((item) => !dedupedByName.some((acc) => acc.name === item.itemName))
+          // An older quote's shared "Standaardkleur: Wit" on a model that now has its own free
+          // colour is not kept: the model's own standard colour is filled in instead.
+          .filter((item) => item.itemName !== 'Standaardkleur: Wit')
           .map((item) => ({
             id: `custom-${item.id}`,
             custom: true,

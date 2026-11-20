@@ -216,11 +216,14 @@ function checkSingleSelect(merged) {
 const STANDARD_PAINT_ACCESSORY_ID = 'paint-standard-white';
 
 // Models whose free standard colour is one of their own paint rows instead of the shared
-// "Standaardkleur: Wit" — the E5's is Snowy White (€0, prijslijst juli 2026). The fallback
+// "Standaardkleur: Wit" — the E5's is Snowy White (€0, prijslijst juli 2026), the Starray
+// EM-i's Alpine White, the E2's Moon White. The fallback
 // below picks that row when it's active, else the shared white. Mirrors
 // MODEL_STANDARD_PAINT_IDS in frontend/src/utils/constants.js.
 const MODEL_STANDARD_PAINT_IDS = {
   'Geely E5': 'e5-paint-moss',
+  'Starray EM-i': 'emi-paint-alpine',
+  'Geely E2': 'e2-paint-moon-white',
 };
 
 async function applyDefaultPaintColor(resolvedAccessories, vehicle) {

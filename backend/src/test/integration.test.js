@@ -128,10 +128,10 @@ describe('server integration', () => {
     const accessories = await accessoriesRes.json();
     // 12 from STANDARD_ACCESSORIES (paint colors + upholstery for E5/Starray) + 6 from
     // GEELY_E2_ACCESSORIES (5 paints + 1 upholstery) + 1 from GEELY_E5_LATER_ACCESSORIES
-    // (Moss Green) + 1 mandatory delivery pack (one row)
+    // (Moss Green) + 1 Starray Alpine White + 1 E2 Moon White + 1 mandatory delivery pack (one row)
     // + 1 towing hook + 2 charging cables + 1 free standard white paint color (all models)
     // — the non-STANDARD_ACCESSORIES rows are seeded on every boot, see database/init.js.
-    assert.equal(accessories.length, 24);
+    assert.equal(accessories.length, 26);
   });
 
   test('the Delivery Pack is billed when sent and can be left off, and the charging cables apply to the E2', async () => {
@@ -258,6 +258,30 @@ describe('server integration', () => {
     await fetch(`${BASE_URL}/api/quotes/${quote.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
   });
 
+  test('a Starray quote without a chosen colour gets its free Alpine White, not the shared white', async () => {
+    const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+    });
+    const cookie = extractCookie(loginRes);
+    const quoteRes = await fetch(`${BASE_URL}/api/quotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        customerName: 'Starray Alpine White Test',
+        selectedVehicleId: 'starray-emi-pro',
+        configuration: { vehicleName: 'Starray EM-i', vehicleModel: 'PRO' },
+        accessories: [],
+      }),
+    });
+    assert.equal(quoteRes.status, 201);
+    const quote = await quoteRes.json();
+    const colours = quote.items.filter((i) => i.category === 'exterior').map((i) => i.name);
+    assert.deepEqual(colours, ['Standaardkleur: Alpine White']);
+    await fetch(`${BASE_URL}/api/quotes/${quote.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
+  });
+
   test('an option scoped to specific trims is only accepted on those trims', async () => {
     const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
       method: 'POST',
@@ -332,7 +356,7 @@ describe('server integration', () => {
     assert.equal(defaultRes.status, 201);
     const defaultQuote = await defaultRes.json();
     const paint = defaultQuote.items.filter((i) => i.name.startsWith('Metallic:') || i.name.startsWith('Standaardkleur:'));
-    assert.deepEqual(paint.map((i) => [i.name, i.price]), [['Metallic: Snowy White', 0]]);
+    assert.deepEqual(paint.map((i) => [i.name, i.price]), [['Standaardkleur: Snowy White', 0]]);
 
     // Moss Green: rejected on PRO, accepted on PRO+.
     assert.equal((await createQuote('geely-e5-pro', [{ id: 'e5-paint-moss-green' }])).status, 400);

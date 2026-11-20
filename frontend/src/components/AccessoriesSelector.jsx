@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { formatPrice } from '../utils/api'
 import { SINGLE_SELECT_CATEGORIES } from '../utils/constants'
-import { accessoriesForVehicle } from '../utils/accessoryScope'
+import { accessoriesForVehicle, standardPaintFor } from '../utils/accessoryScope'
 
 // The catalog category the "Accessoires" section is built from (towing hook, charging
 // cables). A salesperson's own accessories are added to this section too.
@@ -76,7 +76,10 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
   }
   // The salesperson's own accessories are listed with the catalog ones of their section.
   const customAccessories = selectedAccessories.filter(a => a.custom)
+  // The model's free standard colour is always listed first among the colours.
+  const standardPaintId = standardPaintFor(accessories, vehicle)?.id
   const shownAccessories = [...availableAccessories, ...customAccessories]
+    .sort((a, b) => (b.id === standardPaintId) - (a.id === standardPaintId))
   // The Accessoires section always shows, so there is always a place to add your own.
   const categories = [...new Set([...availableAccessories.map(a => a.category), ACCESSORY_CATEGORY])]
 

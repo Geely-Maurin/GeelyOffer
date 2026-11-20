@@ -50,7 +50,7 @@ export const VEHICLE_COLOR_FRONT_IMAGES = {
   'Metallic: Frost Grey': e5FrostGreyFront,
   'Metallic: Carbon Black': e5CarbonBlackFront,
   'Metallic: Moonlight Silver': e5MoonlightSilverFront,
-  'Metallic: Snowy White': e5SnowyWhiteFront,
+  'Standaardkleur: Snowy White': e5SnowyWhiteFront,
   'Metallic: Turquoise Green': e5TurquoiseGreenFront,
   'Metallic: Moss Green': e5MossGreenFront,
   'Metallic: Cloudveil Silver': starrayCloudveilSilverFront,
@@ -63,6 +63,7 @@ export const VEHICLE_COLOR_FRONT_IMAGES = {
   'Metallic: Nova Pink': e2NovaPinkSide,
   'Metallic: Comet Grey': e2CometGreySide,
   'Metallic: Star Silver': e2StarSilverSide,
+  'Standaardkleur: Moon White': e2MoonWhiteSide,
 }
 
 // Bare colour name for matching photos: "Metallic: Frost Grey", "Frost grey" and

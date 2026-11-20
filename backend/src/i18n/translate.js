@@ -55,6 +55,7 @@ const ACCESSORY_PREFIXES_FR = [
   ['Bekleding:', 'Sellerie :'],
   ['Metallic:', 'Métallisé :'],
   ['Standaardlak:', 'Peinture unie :'],
+  ['Standaardkleur:', 'Couleur standard :'],
 ];
 
 // Accessory names with no recognizable prefix pattern to swap — translated by exact match.

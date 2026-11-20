@@ -54,13 +54,16 @@ export const SINGLE_SELECT_CATEGORIES = ['exterior', 'interior']
 export const STANDARD_PAINT_ACCESSORY_ID = 'paint-standard-white'
 
 // Models whose free standard colour is one of their own paint rows instead of the shared
-// "Standaardkleur: Wit" — the E5's is Snowy White (€0, prijslijst juli 2026). While that
+// "Standaardkleur: Wit" — the E5's is Snowy White (€0, prijslijst juli 2026), the Starray
+// EM-i's Alpine White, the E2's Moon White. While that
 // row is in the catalog, the shared row is hidden for the model so the picker never shows
 // two free whites, and the default-colour fallback picks the model's own row (see
 // standardPaintFor in utils/accessoryScope.js). Mirrors MODEL_STANDARD_PAINT_IDS in
 // backend/src/routes/quotes.js.
 export const MODEL_STANDARD_PAINT_IDS = {
   'Geely E5': 'e5-paint-moss',
+  'Starray EM-i': 'emi-paint-alpine',
+  'Geely E2': 'e2-paint-moon-white',
 }
 
 // Language the customer-facing PDF and e-mail are generated in — see

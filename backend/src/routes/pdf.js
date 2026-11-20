@@ -30,7 +30,7 @@ const VEHICLE_COLOR_IMAGES = {
   'Metallic: Frost Grey': path.join(__dirname, '../assets/vehicles/colors/e5-frost-grey-front.jpg'),
   'Metallic: Carbon Black': path.join(__dirname, '../assets/vehicles/colors/e5-carbon-black-front.jpg'),
   'Metallic: Moonlight Silver': path.join(__dirname, '../assets/vehicles/colors/e5-moonlight-silver-front.jpg'),
-  'Metallic: Snowy White': path.join(__dirname, '../assets/vehicles/colors/e5-snowy-white-front.jpg'),
+  'Standaardkleur: Snowy White': path.join(__dirname, '../assets/vehicles/colors/e5-snowy-white-front.jpg'),
   'Metallic: Turquoise Green': path.join(__dirname, '../assets/vehicles/colors/e5-turquoise-green-front.jpg'),
   'Metallic: Moss Green': path.join(__dirname, '../assets/vehicles/colors/e5-moss-green-front.jpg'),
   'Metallic: Cloudveil Silver': path.join(__dirname, '../assets/vehicles/colors/starray-cloudveil-silver-front.jpg'),
@@ -43,6 +43,7 @@ const VEHICLE_COLOR_IMAGES = {
   'Metallic: Nova Pink': path.join(__dirname, '../assets/vehicles/colors/e2-nova-pink-side.jpg'),
   'Metallic: Comet Grey': path.join(__dirname, '../assets/vehicles/colors/e2-comet-grey-side.jpg'),
   'Metallic: Star Silver': path.join(__dirname, '../assets/vehicles/colors/e2-star-silver-side.jpg'),
+  'Standaardkleur: Moon White': path.join(__dirname, '../assets/vehicles/colors/e2-moon-white-side.jpg'),
 };
 
 // Photo for the free "Standaardkleur: Wit" colour, per model — it's one shared row for
