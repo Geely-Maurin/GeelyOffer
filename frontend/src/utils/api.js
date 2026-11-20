@@ -146,9 +146,6 @@ export const api = {
       body: JSON.stringify({ basePrice, accessoriesPrice, discountType, discountValue, nonDiscountableAccessoriesPrice }),
     })
   },
-  async getDiscountTier(quantity) {
-    return request(`/pricing/discount-tier/${quantity}`)
-  },
 
   // PDF
   async generatePDF(quoteId) {

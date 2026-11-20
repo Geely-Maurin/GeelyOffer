@@ -27,7 +27,8 @@ export const ROLE_LABELS = {
   sales: 'Verkoper',
 }
 
-export const DISCOUNT_TYPES = ['percentage', 'fixed']
+// 'fixed' first: the discount type dropdown lists 'Vast bedrag' before 'Percentage'.
+export const DISCOUNT_TYPES = ['fixed', 'percentage']
 
 export const DISCOUNT_TYPE_LABELS = {
   percentage: 'Percentage (%)',

@@ -78,9 +78,9 @@ function QuoteBuilder({ onQuoteCreated }) {
   const [selectedModel, setSelectedModel] = useState(null)
   const [selectedVariant, setSelectedVariant] = useState(null)
   const [selectedAccessories, setSelectedAccessories] = useState([])
-  const [discountType, setDiscountType] = useState('percentage')
+  // A new offer starts with a fixed-amount discount; the rep can switch to a percentage.
+  const [discountType, setDiscountType] = useState('fixed')
   const [discountValue, setDiscountValue] = useState(0)
-  const [quantity, setQuantity] = useState(1)
   const [pricing, setPricing] = useState(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -268,23 +268,6 @@ function QuoteBuilder({ onQuoteCreated }) {
     }
   }
 
-  const getDiscountTierPreview = (qty) => {
-    if (qty >= 10) return 15
-    if (qty >= 5) return 10
-    if (qty >= 3) return 5
-    return 0
-  }
-
-  const applyVolumeDiscount = async () => {
-    try {
-      const tier = await api.getDiscountTier(quantity)
-      setDiscountType('percentage')
-      setDiscountValue(tier.discountPercentage)
-    } catch (err) {
-      setError('Failed to fetch volume discount: ' + err.message)
-    }
-  }
-
   const handleCreateQuote = async () => {
     const missing = missingCustomerFields(customerInfo)
     if (missing.length > 0) {
@@ -352,9 +335,8 @@ function QuoteBuilder({ onQuoteCreated }) {
     setSelectedModel(null)
     setSelectedVariant(null)
     setSelectedAccessories([])
-    setDiscountType('percentage')
+    setDiscountType('fixed')
     setDiscountValue(0)
-    setQuantity(1)
     setPricing(null)
     setError('')
   }
@@ -448,9 +430,8 @@ function QuoteBuilder({ onQuoteCreated }) {
                     setSelectedModel(model)
                     setSelectedVariant(null)
                     setSelectedAccessories([])
-                    setDiscountType('percentage')
+                    setDiscountType('fixed')
                     setDiscountValue(0)
-                    setQuantity(1)
                     setPricing(null)
                   }}
                 />
@@ -565,16 +546,6 @@ function QuoteBuilder({ onQuoteCreated }) {
                 <div className="section-kicker">Korting</div>
                 <div className="form-row">
                   <div className="form-group" style={{ maxWidth: '220px' }}>
-                    <label>Aantal voertuigen</label>
-                    <input
-                      type="number"
-                      min="1"
-                      step="1"
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))}
-                    />
-                  </div>
-                  <div className="form-group" style={{ maxWidth: '220px' }}>
                     <label>Type korting</label>
                     <select value={discountType} onChange={(e) => { setDiscountType(e.target.value); setDiscountValue(0) }}>
                       {DISCOUNT_TYPES.map((t) => (
@@ -582,8 +553,6 @@ function QuoteBuilder({ onQuoteCreated }) {
                       ))}
                     </select>
                   </div>
-                </div>
-                <div className="form-row" style={{ marginTop: '16px' }}>
                   <div className="form-group" style={{ maxWidth: '220px' }}>
                     <label>{discountType === 'fixed' ? 'Korting (€)' : 'Korting (%)'}</label>
                     <input
@@ -607,16 +576,6 @@ function QuoteBuilder({ onQuoteCreated }) {
                       }}
                     />
                   </div>
-                </div>
-                <div className="btn-group">
-                  <button
-                    className="btn btn-outline"
-                    onClick={applyVolumeDiscount}
-                    disabled={quantity < 3}
-                    title={quantity < 3 ? 'Volumekorting geldt vanaf 3 voertuigen' : ''}
-                  >
-                    Volumekorting toepassen ({getDiscountTierPreview(quantity)}%)
-                  </button>
                 </div>
               </div>
 
