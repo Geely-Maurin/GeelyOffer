@@ -152,7 +152,11 @@ async function resolveAccessories(items, vehicle) {
         throw error;
       }
       const quantity = Number.isInteger(item.quantity) && item.quantity > 0 && item.quantity <= 100 ? item.quantity : 1;
-      resolved.push({ id: null, name, price: Math.round(price * 100) / 100, quantity, category: 'techniek', discountable: item.discountable === true });
+      // A saved colour or upholstery whose catalog row was since switched off comes back
+      // as a custom line too; it keeps its category so it still counts as the quote's
+      // colour (no second, default colour is added) and stays single-select.
+      const category = CUSTOM_LINE_CATEGORIES.includes(item.category) ? item.category : 'techniek';
+      resolved.push({ id: null, custom: true, name, price: Math.round(price * 100) / 100, quantity, category, discountable: item.discountable === true });
       continue;
     }
     if (!item || typeof item.id !== 'string') {
@@ -184,8 +188,30 @@ async function resolveAccessories(items, vehicle) {
     resolved.push({ id: accessory.id, name: accessory.name, price: accessory.price, quantity, category: accessory.category, discountable: !!accessory.discountable });
   }
 
-  return resolved;
+  // Two lines with the same name on one quote are merged by the boot-time clean-up
+  // (dedupeDoubledQuoteItems in database/init.js) and the edit form matches lines to the
+  // catalog by name, so a custom line may not share its name with another line or with
+  // an active catalog option.
+  const customLines = resolved.filter((line) => line.custom);
+  if (customLines.length > 0) {
+    const catalogNames = new Set((await allAsync('SELECT name FROM accessories WHERE active = 1')).map((row) => row.name.toLowerCase()));
+    const seen = new Set();
+    for (const line of resolved) {
+      const key = line.name.toLowerCase();
+      if (seen.has(key) || (line.custom && line.category === 'techniek' && catalogNames.has(key))) {
+        const error = new Error(`"${line.name}" staat al op de offerte of in de optielijst — kies een andere naam`);
+        error.status = 400;
+        throw error;
+      }
+      seen.add(key);
+    }
+  }
+  return resolved.map(({ custom, ...line }) => line);
 }
+
+// Categories a custom line may keep: the Accessoires section, or the colour/upholstery
+// slot for a saved option whose catalog row was since switched off.
+const CUSTOM_LINE_CATEGORIES = ['techniek', 'exterior', 'interior'];
 
 // Checks the single-select categories (e.g. one paint colour) on the submitted options.
 // "Mandatory" accessories (the Delivery Pack) are no longer forced in here: the quote

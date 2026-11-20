@@ -255,6 +255,30 @@ describe('server integration', () => {
     });
     assert.equal(badRes.status, 400, 'a custom accessory without a name is refused');
 
+    // Same-named lines would be merged by the boot-time clean-up, so they are refused.
+    for (const accessories of [
+      [{ id: 'c1', custom: true, name: 'Matten', price: 50 }, { id: 'c2', custom: true, name: 'matten', price: 60 }],
+      [{ id: 'c3', custom: true, name: 'Laadkabel 3 fasig (6m)', price: 10 }],
+    ]) {
+      const dupRes = await fetch(`${BASE_URL}/api/quotes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Cookie: cookie },
+        body: JSON.stringify({ customerName: 'Dubbele Naam', selectedVehicleId: 'geely-e2-pro', configuration: { vehicleName: 'Geely E2', vehicleModel: 'PRO' }, accessories }),
+      });
+      assert.equal(dupRes.status, 400, 'a custom accessory may not repeat another line or catalog option name');
+    }
+
+    // A saved colour whose catalog row was switched off comes back from the edit form as a
+    // custom 'exterior' line: it stays the quote's only colour, no default white is added.
+    const colourRes = await fetch(`${BASE_URL}/api/quotes/${quote.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({ accessories: [{ id: 'c4', custom: true, name: 'Metallic: Oud Rood', price: 650, category: 'exterior' }] }),
+    });
+    assert.equal(colourRes.status, 200);
+    const colourItems = (await colourRes.json()).items.map((i) => i.itemName || i.name);
+    assert.deepEqual(colourItems, ['Metallic: Oud Rood']);
+
     await fetch(`${BASE_URL}/api/quotes/${quote.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
   });
 

@@ -25,11 +25,14 @@ export function makeCustomAccessory(name, price) {
   }
 }
 
-function CustomAccessoryForm({ onAdd }) {
+function CustomAccessoryForm({ onAdd, takenNames }) {
   const [name, setName] = useState('')
   const [price, setPrice] = useState('')
   const parsedPrice = Number(String(price).replace(',', '.'))
-  const valid = name.trim() !== '' && price !== '' && Number.isFinite(parsedPrice) && parsedPrice >= 0
+  // A name already on the offer or in the option list is refused (the server does too):
+  // same-named lines would be merged into one.
+  const nameTaken = takenNames.has(name.trim().toLowerCase())
+  const valid = name.trim() !== '' && !nameTaken && price !== '' && Number.isFinite(parsedPrice) && parsedPrice >= 0
   const add = () => {
     if (!valid) return
     onAdd(makeCustomAccessory(name.trim(), Math.round(parsedPrice * 100) / 100))
@@ -55,6 +58,7 @@ function CustomAccessoryForm({ onAdd }) {
         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
       />
       <button type="button" className="btn btn-outline" onClick={add} disabled={!valid}>Toevoegen</button>
+      {nameTaken && <div className="option-mandatory-note" style={{ gridColumn: '1 / -1' }}>Deze naam staat al in de lijst — kies die optie of een andere naam.</div>}
     </div>
   )
 }
@@ -123,7 +127,12 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
                     </label>
                   )
                 })}
-              {category === ACCESSORY_CATEGORY && <CustomAccessoryForm onAdd={onSelectAccessory} />}
+              {category === ACCESSORY_CATEGORY && (
+                <CustomAccessoryForm
+                  onAdd={onSelectAccessory}
+                  takenNames={new Set([...accessories, ...selectedAccessories].map(a => a.name.toLowerCase()))}
+                />
+              )}
             </div>
           </div>
         )

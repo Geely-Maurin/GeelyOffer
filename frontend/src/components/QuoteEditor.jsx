@@ -91,7 +91,11 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
             name: item.itemName,
             price: item.unitPrice,
             quantity: item.quantity || 1,
-            category: 'techniek',
+            // A colour or upholstery whose catalog row was switched off keeps its slot, so
+            // it still counts as the quote's colour instead of turning into an accessory.
+            category: /^(Metallic|Standaardlak|Standaardkleur):/.test(item.itemName)
+              ? 'exterior'
+              : item.itemName.startsWith('Bekleding:') ? 'interior' : 'techniek',
             discountable: !!item.discountable,
           }))
         setSelectedAccessories([...dedupedByName, ...customLines])
@@ -139,8 +143,9 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
     // resolve last (not the one matching the current form) would win. Same "cancelled"
     // guard as the load() effect above.
     let cancelled = false
-    const accessoriesTotal = selectedAccessories.reduce((sum, acc) => sum + acc.price, 0)
-    const nonDiscountableAccessoriesTotal = selectedAccessories.filter((acc) => !acc.discountable).reduce((sum, acc) => sum + acc.price, 0)
+    const lineTotal = (acc) => acc.price * (acc.quantity || 1)
+    const accessoriesTotal = selectedAccessories.reduce((sum, acc) => sum + lineTotal(acc), 0)
+    const nonDiscountableAccessoriesTotal = selectedAccessories.filter((acc) => !acc.discountable).reduce((sum, acc) => sum + lineTotal(acc), 0)
     api.calculatePricing(vehicle.basePrice, accessoriesTotal, discountType, discountValue, nonDiscountableAccessoriesTotal)
       .then((data) => { if (!cancelled) setPricing(data) })
       .catch((err) => { if (!cancelled) setError('Kon prijs niet berekenen: ' + err.message) })
