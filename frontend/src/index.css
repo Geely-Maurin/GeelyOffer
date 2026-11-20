@@ -1028,6 +1028,16 @@ textarea {
   color: var(--muted);
 }
 
+/* Uitvoering cards in step 2: no photo, so the info block carries no top divider. */
+.variant-card .vehicle-info {
+  border-top: none;
+  padding-top: 16px;
+}
+
+.variant-prices {
+  margin: 12px 0 10px;
+}
+
 .compare-variant-specs {
   list-style: none;
   margin: 0;

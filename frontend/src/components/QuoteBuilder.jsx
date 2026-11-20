@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { api, formatPrice, exclVat } from '../utils/api'
+import { api, formatPrice } from '../utils/api'
 import {
   DISCOUNT_TYPES, DISCOUNT_TYPE_LABELS,
   SINGLE_SELECT_CATEGORIES,
@@ -15,55 +15,6 @@ import CustomerForm from './CustomerForm'
 import TradeInForm from './TradeInForm'
 import MissingCustomerInfoModal from './MissingCustomerInfoModal'
 import { VEHICLE_IMAGES, colorFrontImageFor, VEHICLE_STANDARD_COLOR_IMAGES, STANDARD_PAINT_NAME, VEHICLE_REAR_IMAGES, VEHICLE_INTERIOR_IMAGES, VEHICLE_UPHOLSTERY_IMAGES } from '../utils/vehicleImages'
-
-// Known specification keys, in display order — label lookup with a fallback to the
-// raw key so an unrecognized future spec still shows up instead of silently vanishing.
-const SPEC_LABELS = {
-  battery: 'Batterij',
-  range: 'Actieradius',
-  evRange: 'Elektrische actieradius',
-  totalRange: 'Totale actieradius',
-  charger: 'Laden',
-  wheels: 'Wielen',
-}
-const SPEC_KEY_ORDER = ['battery', 'range', 'evRange', 'totalRange', 'charger', 'wheels']
-
-function parseSpecs(vehicle) {
-  try {
-    return JSON.parse(vehicle.specifications || '{}')
-  } catch {
-    return {}
-  }
-}
-
-// Builds the row list for the variant-comparison card — cheapest to priciest. Only rows
-// that actually differ between variants are kept — trims of the same model often share
-// power/torque/charging, and listing those as if they were differences would defeat the
-// point of a "what's different" view. Price is handled separately (always shown, never
-// filtered), since it must never be mistaken for an optional/omittable spec row.
-function buildComparisonRows(variants) {
-  const candidateRows = []
-
-  if (variants.some((v) => v.power)) {
-    candidateRows.push({ label: 'Vermogen', values: variants.map((v) => (v.power ? `${v.power} pk` : '—')) })
-  }
-  if (variants.some((v) => v.torque)) {
-    candidateRows.push({ label: 'Koppel', values: variants.map((v) => (v.torque ? `${v.torque} Nm` : '—')) })
-  }
-  if (variants.some((v) => v.consumption)) {
-    candidateRows.push({
-      label: 'Verbruik',
-      values: variants.map((v) => (v.consumption ? `${v.consumption} ${v.fuel === 'Elektrisch' ? 'kWh' : 'L'}/100km` : '—')),
-    })
-  }
-
-  const specs = variants.map(parseSpecs)
-  SPEC_KEY_ORDER.filter((key) => specs.some((s) => s[key])).forEach((key) => {
-    candidateRows.push({ label: SPEC_LABELS[key], values: specs.map((s) => s[key] || '—') })
-  })
-
-  return candidateRows.filter((row) => new Set(row.values).size > 1)
-}
 
 function QuoteBuilder({ onQuoteCreated }) {
   const { user } = useAuth()
@@ -586,7 +537,7 @@ function QuoteBuilder({ onQuoteCreated }) {
           )}
         </div>
 
-        {((pricing && selectedVariant) || (step === 2 && selectedModel)) && (
+        {pricing && selectedVariant && (
           <aside className="builder-side">
             {pricing && selectedVariant && (
               <div className="card summary-card">
@@ -641,44 +592,6 @@ function QuoteBuilder({ onQuoteCreated }) {
               </div>
             )}
 
-            {step === 2 && selectedModel && (() => {
-              const variants = vehicles
-                .filter((v) => v.name === selectedModel)
-                .sort((a, b) => a.basePrice - b.basePrice)
-              if (variants.length < 2) return null
-              const rows = buildComparisonRows(variants)
-              return (
-                <div className="card">
-                  <div className="section-kicker">Vergelijken</div>
-                  <h3 className="section-title" style={{ fontSize: '1.05rem', marginBottom: '12px' }}>Verschil per uitvoering</h3>
-                  <div className="compare-stack">
-                    {variants.map((v, i) => (
-                      <div key={v.id} className={`compare-variant ${selectedVariant?.id === v.id ? 'compare-variant-active' : ''}`}>
-                        <div className="compare-variant-name">{v.model}</div>
-                        <div className="compare-variant-price">
-                          <span className="compare-price-label">Basisprijs incl. BTW</span>
-                          <strong className="compare-price-value">{formatPrice(v.basePrice)}</strong>
-                        </div>
-                        <div className="compare-variant-price compare-variant-price-excl">
-                          <span className="compare-price-label">Basisprijs excl. BTW</span>
-                          <strong className="compare-price-value">{formatPrice(exclVat(v.basePrice))}</strong>
-                        </div>
-                        {rows.length > 0 && (
-                          <ul className="compare-variant-specs">
-                            {rows.map((row) => (
-                              <li key={row.label}>
-                                <span>{row.label}</span>
-                                <strong>{row.values[i]}</strong>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )
-            })()}
           </aside>
         )}
       </div>
