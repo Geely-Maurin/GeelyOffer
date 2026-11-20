@@ -40,6 +40,7 @@ const LABELS = {
   discount: 'REMISE TVA comprise',
   netTotal: 'TOTAL NET',
   vatAmount: 'Montant de la TVA',
+  totalExclVat: 'Total hors TVA',
   tradeIn: 'REPRISE',
   tradeInMake: 'Marque',
   tradeInModel: 'Modèle',

@@ -49,6 +49,7 @@ export const LABELS = {
   discount: 'KORTING incl btw',
   netTotal: 'NETTO TOTAAL',
   vatAmount: 'Btw-bedrag',
+  totalExclVat: 'Totaal excl btw',
   tradeIn: 'OVERNAME',
   tradeInMake: 'Merk',
   tradeInModel: 'Model',

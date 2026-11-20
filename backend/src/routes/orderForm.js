@@ -584,7 +584,7 @@ function drawNotesCard(doc, flow, { quote, t }) {
 function drawTotalsCard(doc, flow, { quote, t }) {
   const { labels } = t;
   const padding = 16;
-  const height = 150;
+  const height = 164;
   flow.ensure(height);
   const top = flow.y;
   const innerLeft = PAGE_LEFT + padding;
@@ -609,6 +609,9 @@ function drawTotalsCard(doc, flow, { quote, t }) {
 
   put(doc, labels.vatAmount, innerLeft, y, { size: 9, color: MUTED });
   putRight(doc, formatPrice(quote.vatAmount), innerRight, y, { size: 9, color: MUTED });
+  y += 14;
+  put(doc, labels.totalExclVat, innerLeft, y, { size: 9, color: MUTED });
+  putRight(doc, formatPrice(quote.subtotal), innerRight, y, { size: 9, color: MUTED });
   flow.y += height + 16;
 }
 
