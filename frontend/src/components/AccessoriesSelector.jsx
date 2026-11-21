@@ -121,9 +121,6 @@ function AccessoriesSelector({ accessories, selectedAccessories, onSelectAccesso
                         checked={selected}
                         onChange={() => onSelectAccessory(acc)}
                       />
-                      {acc.colorHex && (
-                        <span className="option-color-swatch" style={{ backgroundColor: acc.colorHex }} title={acc.colorHex} />
-                      )}
                       <div className="option-copy">
                         <div className="option-title">{acc.name}</div>
                         {acc.mandatory && <div className="option-mandatory-note">Standaard inbegrepen</div>}

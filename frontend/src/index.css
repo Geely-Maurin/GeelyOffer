@@ -676,15 +676,6 @@ textarea {
   letter-spacing: normal;
 }
 
-.option-color-swatch {
-  display: inline-block;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  border: 1px solid var(--border-strong);
-  flex-shrink: 0;
-}
-
 .option-category-list {
   display: grid;
   gap: 8px;
