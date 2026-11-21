@@ -37,6 +37,7 @@ const BLANK_LINE = '#9AA3AD';
 
 const PAINT_PREFIXES = ['Metallic:', 'Standaardlak:', 'Standaardkleur:'];
 const UPHOLSTERY_PREFIX = 'Bekleding:';
+const MAINTENANCE_PREFIX = 'Club Serenity:';
 
 const router = express.Router();
 
@@ -315,6 +316,7 @@ function classifyItems(items, categoryByName) {
   let color = null;
   let upholstery = null;
   let deliveryPack = null;
+  let maintenance = null;
   const options = [];
   for (const item of items) {
     const category = categoryByName.get(item.itemName);
@@ -324,11 +326,13 @@ function classifyItems(items, categoryByName) {
       upholstery = item;
     } else if (!deliveryPack && item.itemName === DELIVERY_PACK_NAME) {
       deliveryPack = item;
+    } else if (!maintenance && (category === 'onderhoud' || item.itemName.startsWith(MAINTENANCE_PREFIX))) {
+      maintenance = item;
     } else {
       options.push(item);
     }
   }
-  return { color, upholstery, deliveryPack, options };
+  return { color, upholstery, deliveryPack, maintenance, options };
 }
 
 function itemLabel(item, lang) {
@@ -506,7 +510,7 @@ function drawModelCard(doc, flow, { vehicle, items, t, lang }) {
 
 function drawOptionsTable(doc, flow, { quote, vehicle, classified, t, lang }) {
   const { labels } = t;
-  const { color, upholstery, deliveryPack, options } = classified;
+  const { color, upholstery, deliveryPack, maintenance, options } = classified;
   const standardUpholstery = STANDARD_UPHOLSTERY[vehicle.name] && translateAccessoryName(STANDARD_UPHOLSTERY[vehicle.name], lang);
   const rows = [
     { label: labels.version, text: vehicle.model, price: quote.basePrice },
@@ -515,6 +519,9 @@ function drawOptionsTable(doc, flow, { quote, vehicle, classified, t, lang }) {
       ? { label: labels.interior, text: itemLabel(upholstery, lang), price: upholstery.totalPrice }
       : { label: labels.interior, text: standardUpholstery ? `${standardUpholstery} ${labels.standardInteriorSuffix}` : '', price: standardUpholstery ? 0 : null },
     deliveryPack ? { label: labels.deliveryPack, text: '', note: deliveryPackContents(vehicle, lang), price: deliveryPack.totalPrice } : null,
+    maintenance ? { label: labels.maintenance, text: itemLabel(maintenance, lang), price: maintenance.totalPrice } : null,
+    // Everything left over is an accessoire (towing hook, charging cables, the
+    // salesperson's own accessories), one numbered row each.
     ...options.map((item, i) => ({ label: labels.option(i + 1), text: itemLabel(item, lang), price: item.totalPrice })),
   ].filter(Boolean);
 
