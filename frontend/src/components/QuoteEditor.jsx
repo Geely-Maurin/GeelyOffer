@@ -95,7 +95,8 @@ function QuoteEditor({ quoteId, onClose, onSaved }) {
             // it still counts as the quote's colour instead of turning into an accessory.
             category: /^(Metallic|Standaardlak|Standaardkleur):/.test(item.itemName)
               ? 'exterior'
-              : item.itemName.startsWith('Bekleding:') ? 'interior' : 'techniek',
+              : item.itemName.startsWith('Bekleding:') ? 'interior'
+              : item.itemName.startsWith('Club Serenity:') ? 'onderhoud' : 'techniek',
             discountable: !!item.discountable,
           }))
         setSelectedAccessories([...dedupedByName, ...customLines])

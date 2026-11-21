@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { STANDARD_ACCESSORIES, GEELY_E2_ACCESSORIES, GEELY_E5_LATER_ACCESSORIES } from '../data/accessoriesSeed.js';
+import { STANDARD_ACCESSORIES, GEELY_E2_ACCESSORIES, GEELY_E5_LATER_ACCESSORIES, CLUB_SERENITY_PLANS } from '../data/accessoriesSeed.js';
 import { calculatePricing } from '../utils/pricing.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -373,6 +373,27 @@ function seedGeelyE2AccessoriesIfMissing(database) {
         }
       );
     });
+  });
+}
+
+// Runs on every boot (same reasoning as seedGeelyE2AccessoriesIfMissing above) so the Club
+// Serenity maintenance plans reach databases seeded before they existed. Insert-only per
+// id: a price an admin changes in Beheer → Opties is never overwritten. Optional and
+// non-discountable (a fixed Club Serenity tariff, like the towing hook).
+function seedMaintenancePlansIfMissing(database) {
+  CLUB_SERENITY_PLANS.forEach((plan) => {
+    database.run(
+      `INSERT OR IGNORE INTO accessories (id, name, price, category, vehicleModels, vehicleTrims, active, mandatory, discountable)
+       VALUES (?, ?, ?, ?, ?, ?, 1, 0, 0)`,
+      [plan.id, plan.name, plan.price, plan.category, JSON.stringify(plan.vehicleModels), JSON.stringify(plan.vehicleTrims)],
+      function onInsert(insertErr) {
+        if (insertErr) {
+          console.error(`Failed to seed ${plan.id}:`, insertErr.message);
+          return;
+        }
+        if (this.changes > 0) console.log(`✓ Added ${plan.name} (${plan.vehicleModels.join(', ')})`);
+      }
+    );
   });
 }
 
@@ -1104,6 +1125,7 @@ export function initializeDatabase() {
     seedTowingHookIfMissing(database);
     seedChargingCablesIfMissing(database);
     seedStandardPaintColorIfMissing(database);
+    seedMaintenancePlansIfMissing(database);
     restoreDeliveryPackScopingIfWidened(database);
     dedupeDoubledQuoteItems(database);
     backfillAccessoryDiscountableIfMissing(database);

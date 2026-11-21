@@ -9,6 +9,7 @@ const CATEGORY_SECTIONS = [
   { key: 'exterior', label: 'Exterieur (lakkleuren)' },
   { key: 'interior', label: 'Interieur (bekleding)' },
   { key: 'techniek', label: 'Accessoires' },
+  { key: 'onderhoud', label: 'Onderhoudscontracten (Club Serenity)' },
   { key: 'verplicht', label: 'Standaard' },
 ]
 const OTHER_SECTION = { key: '__other__', label: 'Overig' }

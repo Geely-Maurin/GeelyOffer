@@ -604,9 +604,10 @@ function renderQuotePdf(doc, { quote, vehicle, items }) {
   const rows = [
     { name: vehicleLabel, unitPrice: quote.basePrice, quantity: 1, totalPrice: quote.basePrice },
     ...items.map(item => ({
-      // The Delivery Pack is never tagged: it isn't an accessoire, and its contents line says what it is.
+      // The Delivery Pack and a Club Serenity maintenance plan are never tagged: neither is
+      // an accessoire, and their own name says what they are.
       name: translateAccessoryName(item.itemName, lang)
-        + (item.discountable || item.itemName === DELIVERY_PACK_NAME ? '' : ` (${T.nonDiscountableTag})`),
+        + (item.discountable || item.itemName === DELIVERY_PACK_NAME || item.itemName.startsWith('Club Serenity:') ? '' : ` (${T.nonDiscountableTag})`),
       unitPrice: item.unitPrice,
       quantity: item.quantity,
       totalPrice: item.totalPrice,

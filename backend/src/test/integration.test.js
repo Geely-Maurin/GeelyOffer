@@ -130,8 +130,43 @@ describe('server integration', () => {
     // GEELY_E2_ACCESSORIES (5 paints + 1 upholstery) + 1 from GEELY_E5_LATER_ACCESSORIES
     // (Moss Green) + 1 Starray Alpine White + 1 E2 Moon White + 1 mandatory delivery pack (one row)
     // + 1 towing hook + 2 charging cables + 1 free standard white paint color (all models)
+    // + 8 Club Serenity maintenance plans (4 for E2/E5, 4 for the Starray EM-i)
     // — the non-STANDARD_ACCESSORIES rows are seeded on every boot, see database/init.js.
-    assert.equal(accessories.length, 26);
+    assert.equal(accessories.length, 34);
+  });
+
+  test('a Club Serenity maintenance plan is billed at full price, scoped per model, and only one fits a quote', async () => {
+    const loginRes = await fetch(`${BASE_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+    });
+    const cookie = extractCookie(loginRes);
+    const post = (vehicleId, vehicleName, vehicleModel, accessoryIds) => fetch(`${BASE_URL}/api/quotes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: cookie },
+      body: JSON.stringify({
+        customerName: 'Club Serenity Test',
+        selectedVehicleId: vehicleId,
+        configuration: { vehicleName, vehicleModel },
+        accessories: accessoryIds.map((id) => ({ id })),
+        discountType: 'fixed',
+        discountValue: 500,
+      }),
+    });
+
+    const okRes = await post('geely-e2-pro', 'Geely E2', 'PRO', ['club-serenity-e2-e5-3']);
+    assert.equal(okRes.status, 201);
+    const quote = await okRes.json();
+    assert.equal(quote.totalPrice, 21490 - 500 + 499, 'the plan is added at its full price, untouched by the discount');
+
+    const twoRes = await post('geely-e2-pro', 'Geely E2', 'PRO', ['club-serenity-e2-e5-2', 'club-serenity-e2-e5-3']);
+    assert.equal(twoRes.status, 400, 'two maintenance plans on one car are refused');
+
+    const wrongModelRes = await post('geely-e2-pro', 'Geely E2', 'PRO', ['club-serenity-starray-2']);
+    assert.equal(wrongModelRes.status, 400, 'a Starray plan does not apply to the E2');
+
+    await fetch(`${BASE_URL}/api/quotes/${quote.id}`, { method: 'DELETE', headers: { Cookie: cookie } });
   });
 
   test('the Delivery Pack is billed when sent and can be left off, and the charging cables apply to the E2', async () => {

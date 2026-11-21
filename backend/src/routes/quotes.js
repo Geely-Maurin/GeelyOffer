@@ -112,7 +112,8 @@ function normalizeVatNumber(raw) {
 // one paint color and one interior/upholstery, so this is checked here too rather than
 // trusting the UI alone to enforce it (the UI can have bugs, and this endpoint can be
 // called directly).
-const SINGLE_SELECT_CATEGORIES = ['exterior', 'interior'];
+// 'onderhoud' holds the Club Serenity maintenance plans: one plan per car.
+const SINGLE_SELECT_CATEGORIES = ['exterior', 'interior', 'onderhoud'];
 
 // An accessory is scoped to a vehicle (trim) in two independent ways: by whole-model name
 // (`vehicleModels`) and by exact trim id (`vehicleTrims`). It applies when it has neither
@@ -209,9 +210,9 @@ async function resolveAccessories(items, vehicle) {
   return resolved.map(({ custom, ...line }) => line);
 }
 
-// Categories a custom line may keep: the Accessoires section, or the colour/upholstery
-// slot for a saved option whose catalog row was since switched off.
-const CUSTOM_LINE_CATEGORIES = ['techniek', 'exterior', 'interior'];
+// Categories a custom line may keep: the Accessoires section, or the colour/upholstery/
+// maintenance-plan slot for a saved option whose catalog row was since switched off.
+const CUSTOM_LINE_CATEGORIES = ['techniek', 'exterior', 'interior', 'onderhoud'];
 
 // Checks the single-select categories (e.g. one paint colour) on the submitted options.
 // "Mandatory" accessories (the Delivery Pack) are no longer forced in here: the quote

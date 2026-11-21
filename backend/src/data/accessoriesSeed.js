@@ -63,6 +63,33 @@ export const GEELY_E5_LATER_ACCESSORIES = [
   { id: 'emi-paint-alpine', name: 'Standaardkleur: Alpine White', price: 0, category: 'exterior', vehicleModels: ['Starray EM-i'], vehicleTrims: [], colorHex: '#F2F3F1' },
 ];
 
+// Club Serenity maintenance plans, from "Prijzen Club Serenity Geely BE 2027" (klanten-
+// tarieven incl. BTW, 01/01/2027). One plan covers 2–5 maintenance services; the service
+// interval differs per model (Starray EM-i every 1 year / 15.000 km, E2 and E5 every
+// 1 year / 20.000 km). Category 'onderhoud' is single-select (one plan per car) and the
+// plans are fixed tariffs, so the vehicle discount does not apply (discountable = 0).
+// Inserted per id on every boot by seedMaintenancePlansIfMissing() in database/init.js;
+// prices are edited afterwards in Beheer → Opties.
+const clubSerenityPlan = (key, models, intervalKm, services, price) => ({
+  id: `club-serenity-${key}-${services}`,
+  name: `Club Serenity: ${services} onderhoudsbeurten (1 jaar / ${intervalKm} km)`,
+  price,
+  category: 'onderhoud',
+  vehicleModels: models,
+  vehicleTrims: [],
+});
+
+export const CLUB_SERENITY_PLANS = [
+  clubSerenityPlan('e2-e5', ['Geely E2', 'Geely E5'], '20.000', 2, 389),
+  clubSerenityPlan('e2-e5', ['Geely E2', 'Geely E5'], '20.000', 3, 499),
+  clubSerenityPlan('e2-e5', ['Geely E2', 'Geely E5'], '20.000', 4, 1149),
+  clubSerenityPlan('e2-e5', ['Geely E2', 'Geely E5'], '20.000', 5, 1259),
+  clubSerenityPlan('starray', ['Starray EM-i'], '15.000', 2, 909),
+  clubSerenityPlan('starray', ['Starray EM-i'], '15.000', 3, 1399),
+  clubSerenityPlan('starray', ['Starray EM-i'], '15.000', 4, 2019),
+  clubSerenityPlan('starray', ['Starray EM-i'], '15.000', 5, 2389),
+];
+
 export const GEELY_E2_ACCESSORIES = [
   { id: 'e2-paint-moon-white', name: 'Standaardkleur: Moon White', price: 0, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#F4F4F1' },
   { id: 'e2-paint-nebula-beige', name: 'Standaardlak: Nebula Beige', price: 350, category: 'exterior', vehicleModels: ['Geely E2'], vehicleTrims: [], colorHex: '#D6CFBE' },

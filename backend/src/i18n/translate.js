@@ -67,9 +67,15 @@ const ACCESSORY_NAME_EXACT_FR = {
   'Laadkabel 3 fasig (8m)': 'Câble de recharge triphasé (8m)',
 };
 
+// "Club Serenity: 3 onderhoudsbeurten (1 jaar / 20.000 km)" → the French wording of the
+// Club Serenity price list ("Club Sérénité : 3 entretiens (1 an / 20.000 km)").
+const CLUB_SERENITY_PATTERN = /^Club Serenity: (\d+) onderhoudsbeurten \(1 jaar \/ ([\d.]+) km\)$/;
+
 export function translateAccessoryName(name, lang) {
   if (resolveLang(lang) !== 'fr' || !name) return name;
   if (ACCESSORY_NAME_EXACT_FR[name]) return ACCESSORY_NAME_EXACT_FR[name];
+  const plan = name.match(CLUB_SERENITY_PATTERN);
+  if (plan) return `Club Sérénité : ${plan[1]} entretiens (1 an / ${plan[2]} km)`;
   for (const [nl, fr] of ACCESSORY_PREFIXES_FR) {
     if (name.startsWith(nl)) return fr + name.slice(nl.length);
   }

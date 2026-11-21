@@ -42,7 +42,8 @@ export const DISCOUNT_TYPE_LABELS = {
 // only one interior option (so it's never actually been ambiguous yet) — once a model gets
 // a second one, this is what keeps a customer from ending up with two interiors selected,
 // which would make the quote ambiguous.
-export const SINGLE_SELECT_CATEGORIES = ['exterior', 'interior']
+// 'onderhoud' holds the Club Serenity maintenance plans: one plan per car.
+export const SINGLE_SELECT_CATEGORIES = ['exterior', 'interior', 'onderhoud']
 
 // The free €0 standard paint colour ("Standaardkleur: Wit") seeded in
 // backend/src/database/init.js (seedStandardPaintColorIfMissing) and applicable to every

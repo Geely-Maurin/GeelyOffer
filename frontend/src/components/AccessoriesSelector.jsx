@@ -7,7 +7,7 @@ import { accessoriesForVehicle, standardPaintFor } from '../utils/accessoryScope
 // cables). A salesperson's own accessories are added to this section too.
 const ACCESSORY_CATEGORY = 'techniek'
 
-const CATEGORY_TITLES = { verplicht: 'Standaard', [ACCESSORY_CATEGORY]: 'Accessoires' }
+const CATEGORY_TITLES = { verplicht: 'Standaard', [ACCESSORY_CATEGORY]: 'Accessoires', onderhoud: 'Onderhoudscontract (Club Serenity)' }
 const categoryTitle = (category) => CATEGORY_TITLES[category] || category.charAt(0).toUpperCase() + category.slice(1)
 
 // A salesperson's own accessory: a free-text name and price (incl. BTW). It is not in the
